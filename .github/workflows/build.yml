@@ -166,8 +166,12 @@ EOF
           tag_name: ${{ env.VERSION }}
           fail_on_unmatched_files: true
         if: github.event_name == 'workflow_dispatch'
+      - name: Check Buildozer Log Path
+        run: ls -l $HOME/.buildozer/android/platform/build-*/build.log || echo "No build logs found"
+        shell: bash
+        if: failure()
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: buildozer-logs
-          path: ~/.buildozer/android/platform/build-*/build.log
+          path: $HOME/.buildozer/android/platform/build-*/build.log
