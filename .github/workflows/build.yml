@@ -67,8 +67,14 @@ jobs:
             echo "OS_NAME=windows" >> $GITHUB_ENV
           fi
         shell: bash
-      - run: zip -r grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip dist/*
+      - name: Zip Artifact (Linux/macOS)
+        run: zip -r grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip dist/*
+        if: runner.os != 'Windows'
         shell: bash
+      - name: Zip Artifact (Windows)
+        run: Compress-Archive -Path dist\* -DestinationPath "grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip"
+        if: runner.os == 'Windows'
+        shell: pwsh
       - uses: actions/upload-artifact@v4
         with:
           name: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}
@@ -176,37 +182,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: grok-farewell-android-${{ env.VERSION }}
-          path: grok-farewell-android-${{ env.VERSION }}.zip
-      - name: Upload Android Release Asset
-        uses: softprops/action-gh-release@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: grok-farewell-android-${{ env.VERSION }}.zip
-          tag_name: ${{ env.VERSION }}
-          fail_on_unmatched_files: true
-        if: github.event_name == 'workflow_dispatch'
-      - name: Create Buildozer Log Preparation Script
-        run: |
-          echo '#!/bin/bash' > prepare_buildozer_logs.sh
-          echo 'set -e' >> prepare_buildozer_logs.sh
-          echo 'if ls -l $HOME/.buildozer/android/platform/build-*/build.log >/dev/null 2>&1; then' >> prepare_buildozer_logs.sh
-          echo '  echo "Preparing Buildozer logs..."' >> prepare_buildozer_logs.sh
-          echo '  mkdir -p buildozer-logs' >> prepare_buildozer_logs.sh
-          echo '  cp $HOME/.buildozer/android/platform/build-*/build.log buildozer-logs/' >> prepare_buildozer_logs.sh
-          echo '  zip -r buildozer-logs.zip buildozer-logs/' >> prepare_buildozer_logs.sh
-          echo '  touch buildozer-logs-prepared' >> prepare_buildozer_logs.sh
-          echo 'else' >> prepare_buildozer_logs.sh
-          echo '  echo "No build logs found"' >> prepare_buildozer_logs.sh
-          echo 'fi' >> prepare_buildozer_logs.sh
-          chmod +x prepare_buildozer_logs.sh
-        shell: bash
-      - name: Prepare Buildozer Logs
-        run: ./prepare_buildozer_logs.sh
-        shell: bash
-        if: failure()
-      - name: Upload Buildozer Logs on Failure
-        uses: actions/upload-artifact@v4
-        with:
-          name: buildozer-logs
-          path: buildozer-logs.zip
-        continue-on-error: true
+          path:
