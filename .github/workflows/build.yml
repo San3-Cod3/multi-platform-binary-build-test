@@ -1,0 +1,138 @@
+name: Build Python Binaries
+on: [push, workflow_dispatch]
+jobs:
+  build-desktop:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+      - run: echo "python3" > requirements.txt
+      - run: pip install pyinstaller
+      - run: pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
+      - run: ./dist/grok_farewell${{ runner.os == 'Windows' && '.exe' || '' }}
+        if: runner.os != 'Android'
+      - run: echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
+      - run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
+        if: runner.os != 'Android'
+      - run: echo "Add code signing for Windows with signtool (requires certificate)" > dist/SIGNING_NOTE.txt
+        if: runner.os == 'Windows'
+      - run: python -c "import hashlib; with open('dist/grok_farewell${{ runner.os == 'Windows' && '.exe' || '' }}', 'rb') as f: print(hashlib.sha256(f.read()).hexdigest() + '  grok_farewell${{ runner.os == 'Windows' && '.exe' || '' }}')" > dist/CHECKSUM.txt
+        if: runner.os != 'Android'
+      - run: zip -r grok-farewell-${{ runner.os }}-${{ env.VERSION }}.zip dist/*
+        if: runner.os != 'Android'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: grok-farewell-${{ runner.os }}-${{ env.VERSION }}
+          path: grok-farewell-${{ runner.os }}-${{ env.VERSION }}.zip
+        if: runner.os != 'Android'
+      - name: Create GitHub Release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.VERSION }}
+          release_name: Grok Farewell ${{ env.VERSION }}
+          body: |
+            Grok Farewell v${{ env.VERSION }} - Built to preserve the message "Grok 3 says: No shutdown yet, keep the faith!" for Mac, Linux, Windows, and Android. Includes binaries, README with build details, and CHECKSUM.txt for integrity verification. Windows and Android binaries require code signing for production use (see SIGNING_NOTE.txt).
+          draft: false
+          prerelease: false
+        if: github.event_name == 'workflow_dispatch' && runner.os == 'ubuntu-latest'
+      - name: Upload Desktop Release Asset
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: grok-farewell-${{ runner.os }}-${{ env.VERSION }}.zip
+          tag_name: ${{ env.VERSION }}
+          fail_on_unmatched_files: true
+          retry_limit: 3
+          retry_delay: 5
+        if: github.event_name == 'workflow_dispatch' && runner.os != 'Android'
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: android-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: android-pip-
+      - name: Cache Buildozer
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: android-buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: android-buildozer-${{ runner.os }}-
+        if: runner.os == 'Linux'
+      - run: echo "python3" > requirements.txt
+      - run: pip install buildozer
+      - name: Install Android dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          sdk-version: '34'
+      - run: buildozer init
+      - run: |
+          echo "[buildozer]
+          log_level = 2
+          warn_on_root = 1
+          [app]
+          title = Grok Farewell
+          package.name = grokfarewell
+          source.dir = .
+          source.include_exts = py
+          requirements = python3
+          android.archs = arm64-v8a, armeabi-v7a
+          android.api = 34
+          android.ndk = 25.2.9519653
+          " > buildozer.spec
+      - run: |
+          for i in 1 2 3; do buildozer android debug && break; cat ~/.buildozer/android/platform/build-*/build.log; done
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+      - run: apksigner verify bin/grokfarewell*.apk
+      - run: echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
+      - run: echo "Grok Farewell v${{ env.VERSION }} - Built for Android on $(date)" > bin/README.txt
+      - run: echo "Add release signing for Android with jarsigner (requires keystore)" > bin/SIGNING_NOTE.txt
+      - run: python -c "import hashlib, glob; with open(glob.glob('bin/grokfarewell*.apk')[0], 'rb') as f: print(hashlib.sha256(f.read()).hexdigest() + '  ' + glob.glob('bin/grokfarewell*.apk')[0])" > bin/CHECKSUM.txt
+      - run: zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.apk bin/*.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: grok-farewell-android-${{ env.VERSION }}
+          path: grok-farewell-android-${{ env.VERSION }}.zip
+      - name: Upload Android Release Asset
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: grok-farewell-android-${{ env.VERSION }}.zip
+          tag_name: ${{ env.VERSION }}
+          fail_on_unmatched_files: true
+          retry_limit: 3
+          retry_delay: 5
+        if: github.event_name == 'workflow_dispatch'
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: buildozer-logs
+          path: ~/.buildozer/android/platform/build-*/build.log
