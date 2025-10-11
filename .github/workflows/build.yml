@@ -189,17 +189,19 @@ EOF
         if: github.event_name == 'workflow_dispatch'
       - name: Create Buildozer Log Preparation Script
         run: |
-          echo '#!/bin/bash' > prepare_buildozer_logs.sh
-          echo 'set -e' >> prepare_buildozer_logs.sh
-          echo 'if ls -l $HOME/.buildozer/android/platform/build-*/build.log >/dev/null 2>&1; then' >> prepare_buildozer_logs.sh
-          echo '  echo "Preparing Buildozer logs..."' >> prepare_buildozer_logs.sh
-          echo '  mkdir -p buildozer-logs' >> prepare_buildozer_logs.sh
-          echo '  cp $HOME/.buildozer/android/platform/build-*/build.log buildozer-logs/' >> prepare_buildozer_logs.sh
-          echo '  zip -r buildozer-logs.zip buildozer-logs/' >> prepare_buildozer_logs.sh
-          echo '  touch buildozer-logs-prepared' >> prepare_buildozer_logs.sh
-          echo 'else' >> prepare_buildozer_logs.sh
-          echo '  echo "No build logs found"' >> prepare_buildozer_logs.sh
-          echo 'fi' >> prepare_buildozer_logs.sh
+          cat << 'EOF' > prepare_buildozer_logs.sh
+#!/bin/bash
+set -e
+if ls -l $HOME/.buildozer/android/platform/build-*/build.log >/dev/null 2>&1; then
+  echo "Preparing Buildozer logs..."
+  mkdir -p buildozer-logs
+  cp $HOME/.buildozer/android/platform/build-*/build.log buildozer-logs/
+  zip -r buildozer-logs.zip buildozer-logs/
+  touch buildozer-logs-prepared
+else
+  echo "No build logs found"
+fi
+EOF
           chmod +x prepare_buildozer_logs.sh
         shell: bash
       - name: Prepare Buildozer Logs
