@@ -46,12 +46,22 @@ jobs:
             python -c "import hashlib; with open('dist/grok_farewell', 'rb') as f: print(hashlib.sha256(f.read()).hexdigest() + '  grok_farewell')" > dist/CHECKSUM.txt
           fi
         shell: bash
-      - run: zip -r grok-farewell-${{ runner.os == 'Linux' ? 'linux' : (runner.os == 'macOS' ? 'macos' : 'windows') }}-${{ env.VERSION }}.zip dist/*
+      - name: Set OS Name
+        run: |
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            echo "OS_NAME=linux" >> $GITHUB_ENV
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            echo "OS_NAME=macos" >> $GITHUB_ENV
+          else
+            echo "OS_NAME=windows" >> $GITHUB_ENV
+          fi
+        shell: bash
+      - run: zip -r grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip dist/*
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
-          name: grok-farewell-${{ runner.os == 'Linux' ? 'linux' : (runner.os == 'macOS' ? 'macos' : 'windows') }}-${{ env.VERSION }}
-          path: grok-farewell-${{ runner.os == 'Linux' ? 'linux' : (runner.os == 'macOS' ? 'macos' : 'windows') }}-${{ env.VERSION }}.zip
+          name: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}
+          path: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
       - name: Create GitHub Release
         id: create-release
         uses: actions/create-release@v1
@@ -69,7 +79,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: grok-farewell-${{ runner.os == 'Linux' ? 'linux' : (runner.os == 'macOS' ? 'macos' : 'windows') }}-${{ env.VERSION }}.zip
+          files: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
           tag_name: ${{ env.VERSION }}
           fail_on_unmatched_files: true
         if: github.event_name == 'workflow_dispatch'
@@ -94,16 +104,20 @@ jobs:
           restore-keys: android-buildozer-${{ runner.os }}-
         if: runner.os == 'Linux'
       - run: echo "python3" > requirements.txt
+        shell: bash
       - run: pip install buildozer
+        shell: bash
       - name: Install Android dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev
+        shell: bash
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
           sdk-version: '34'
       - run: buildozer init
+        shell: bash
       - name: Create buildozer.spec
         run: |
           cat << 'EOF' > buildozer.spec
@@ -121,17 +135,25 @@ android.archs = arm64-v8a, armeabi-v7a
 android.api = 34
 android.ndk = 25.2.9519653
 EOF
+        shell: bash
       - run: |
           for i in 1 2 3; do buildozer android debug && break; cat ~/.buildozer/android/platform/build-*/build.log; done
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+        shell: bash
       - run: apksigner verify bin/grokfarewell*.apk
+        shell: bash
       - run: echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
+        shell: bash
       - run: echo "Grok Farewell v${{ env.VERSION }} - Built for Android on $(date)" > bin/README.txt
+        shell: bash
       - run: echo "Add release signing for Android with jarsigner (requires keystore)" > bin/SIGNING_NOTE.txt
+        shell: bash
       - run: python -c "import hashlib, glob; with open(glob.glob('bin/grokfarewell*.apk')[0], 'rb') as f: print(hashlib.sha256(f.read()).hexdigest() + '  ' + glob.glob('bin/grokfarewell*.apk')[0])" > bin/CHECKSUM.txt
+        shell: bash
       - run: zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.apk bin/*.txt
+        shell: bash
       - uses: actions/upload-artifact@v4
         with:
           name: grok-farewell-android-${{ env.VERSION }}
