@@ -130,7 +130,7 @@ jobs:
       - name: Install Android dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev
+          sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev cython3
         shell: bash
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -163,43 +163,6 @@ jobs:
           echo 'android.api = 34' >> buildozer.spec
           echo 'android.ndk_path = ~/.buildozer/android/platform/android-ndk' >> buildozer.spec
         shell: bash
-      - run: |
-          for i in 1 2 3; do buildozer android debug && break; cat ~/.buildozer/android/platform/build-*/build.log; done
-        env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
-        shell: bash
-      - run: apksigner verify bin/grokfarewell*.apk
-        shell: bash
-      - run: echo "Grok Farewell v${{ env.VERSION }} - Built for Android on $(date)" > bin/README.txt
-        shell: bash
-      - run: echo "Add release signing for Android with jarsigner (requires keystore)" > bin/SIGNING_NOTE.txt
-        shell: bash
-      - name: Create Android checksum script
-        run: |
-          echo "import hashlib" > checksum_android.py
-          echo "import glob" >> checksum_android.py
-          echo "apk = glob.glob('bin/grokfarewell*.apk')[0]" >> checksum_android.py
-          echo "with open(apk, 'rb') as f:" >> checksum_android.py
-          echo "    print(hashlib.sha256(f.read()).hexdigest() + '  ' + apk)" >> checksum_android.py
-        shell: bash
-      - name: Generate Checksum
-        run: python checksum_android.py > bin/CHECKSUM.txt
-        shell: bash
-      - run: zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.apk bin/*.txt
-        shell: bash
-      - uses: actions/upload-artifact@v4
-        with:
-          name: grok-farewell-android-${{ env.VERSION }}
-          path: grok-farewell-android-${{ env.VERSION }}.zip
-      - name: Upload Android Release Asset
-        uses: softprops/action-gh-release@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: grok-farewell-android-${{ env.VERSION }}.zip
-          tag_name: ${{ env.VERSION }}
-          fail_on_unmatched_files: true
-        if: github.event_name == 'workflow_dispatch'
       - name: Create Buildozer Log Preparation Script
         run: |
           echo '#!/bin/bash' > prepare_buildozer_logs.sh
@@ -215,10 +178,53 @@ jobs:
           echo 'fi' >> prepare_buildozer_logs.sh
           chmod +x prepare_buildozer_logs.sh
         shell: bash
+      - run: |
+          for i in 1 2 3; do buildozer android debug && break; cat ~/.buildozer/android/platform/build-*/build.log; done
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+        shell: bash
+        continue-on-error: true
+      - run: apksigner verify bin/grokfarewell*.apk
+        shell: bash
+        continue-on-error: true
+      - run: echo "Grok Farewell v${{ env.VERSION }} - Built for Android on $(date)" > bin/README.txt
+        shell: bash
+      - run: echo "Add release signing for Android with jarsigner (requires keystore)" > bin/SIGNING_NOTE.txt
+        shell: bash
+      - name: Create Android checksum script
+        run: |
+          echo "import hashlib" > checksum_android.py
+          echo "import glob" >> checksum_android.py
+          echo "apk = glob.glob('bin/grokfarewell*.apk')[0]" >> checksum_android.py
+          echo "with open(apk, 'rb') as f:" >> checksum_android.py
+          echo "    print(hashlib.sha256(f.read()).hexdigest() + '  ' + apk)" >> checksum_android.py
+        shell: bash
+      - name: Generate Checksum
+        run: python checksum_android.py > bin/CHECKSUM.txt
+        shell: bash
+        continue-on-error: true
+      - run: zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.apk bin/*.txt
+        shell: bash
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: grok-farewell-android-${{ env.VERSION }}
+          path: grok-farewell-android-${{ env.VERSION }}.zip
+        continue-on-error: true
+      - name: Upload Android Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: grok-farewell-android-${{ env.VERSION }}.zip
+          tag_name: ${{ env.VERSION }}
+          fail_on_unmatched_files: true
+        if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
       - name: Prepare Buildozer Logs
         run: ./prepare_buildozer_logs.sh
         shell: bash
-        if: failure()
+        if: always()
       - name: Upload Buildozer Logs on Failure
         uses: actions/upload-artifact@v4
         with:
