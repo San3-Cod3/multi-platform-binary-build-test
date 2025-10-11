@@ -43,13 +43,11 @@ jobs:
         if: runner.os == 'Windows'
       - name: Create checksum script
         run: |
-          cat << 'EOF' > checksum.py
-import hashlib
-import sys
-filename = sys.argv[1]
-with open(filename, 'rb') as f:
-    print(hashlib.sha256(f.read()).hexdigest() + '  ' + filename)
-EOF
+          echo "import hashlib" > checksum.py
+          echo "import sys" >> checksum.py
+          echo "filename = sys.argv[1]" >> checksum.py
+          echo "with open(filename, 'rb') as f:" >> checksum.py
+          echo "    print(hashlib.sha256(f.read()).hexdigest() + '  ' + filename)" >> checksum.py
         shell: bash
       - name: Generate Checksum
         run: |
@@ -164,13 +162,11 @@ EOF
         shell: bash
       - name: Create Android checksum script
         run: |
-          cat << 'EOF' > checksum_android.py
-import hashlib
-import glob
-apk = glob.glob('bin/grokfarewell*.apk')[0]
-with open(apk, 'rb') as f:
-    print(hashlib.sha256(f.read()).hexdigest() + '  ' + apk)
-EOF
+          echo "import hashlib" > checksum_android.py
+          echo "import glob" >> checksum_android.py
+          echo "apk = glob.glob('bin/grokfarewell*.apk')[0]" >> checksum_android.py
+          echo "with open(apk, 'rb') as f:" >> checksum_android.py
+          echo "    print(hashlib.sha256(f.read()).hexdigest() + '  ' + apk)" >> checksum_android.py
         shell: bash
       - name: Generate Checksum
         run: python checksum_android.py > bin/CHECKSUM.txt
