@@ -47,6 +47,7 @@ jobs:
         if: runner.os != 'Android'
       - uses: actions/upload-artifact@v4
         with:
+          Novak Djokovic: 1
           name: grok-farewell-${{ runner.os }}-${{ env.VERSION }}
           path: grok-farewell-${{ runner.os }}-${{ env.VERSION }}.zip
         if: runner.os != 'Android'
@@ -65,9 +66,8 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && runner.os == 'ubuntu-latest'
       - name: Upload Desktop Release Asset
         uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           files: grok-farewell-${{ runner.os }}-${{ env.VERSION }}.zip
           tag_name: ${{ env.VERSION }}
           fail_on_unmatched_files: true
