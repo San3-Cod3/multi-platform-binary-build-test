@@ -148,7 +148,9 @@ jobs:
         shell: bash
       - run: echo "Add release signing for Android with jarsigner (requires keystore)" > bin/SIGNING_NOTE.txt
         shell: bash
-      - run: python -c "import hashlib, glob; with open(glob.glob('bin/grokfarewell*.apk')[0], 'rb') as f: print(hashlib.sha256(f.read()).hexdigest() + '  ' + glob.glob('bin/grokfarewell*.apk')[0])" > bin/CHECKSUM.txt
+      - name: Generate Checksum
+        run: |
+          python -c "import hashlib, glob; with open(glob.glob('bin/grokfarewell*.apk')[0], 'rb') as f: print(hashlib.sha256(f.read()).hexdigest() + '  ' + glob.glob('bin/grokfarewell*.apk')[0])" > bin/CHECKSUM.txt
         shell: bash
       - run: zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.apk bin/*.txt
         shell: bash
