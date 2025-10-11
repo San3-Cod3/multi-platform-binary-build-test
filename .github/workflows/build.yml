@@ -20,14 +20,28 @@ jobs:
       - run: echo "python3" > requirements.txt
       - run: pip install pyinstaller
       - run: pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
-      - run: ./dist/grok_farewell${{ runner.os == 'Windows' && '.exe' || '' }}
+      - name: Run Binary
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            ./dist/grok_farewell.exe
+          else
+            ./dist/grok_farewell
+          fi
+        shell: bash
         if: runner.os != 'Android'
       - run: echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
       - run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
         if: runner.os != 'Android'
       - run: echo "Add code signing for Windows with signtool (requires certificate)" > dist/SIGNING_NOTE.txt
         if: runner.os == 'Windows'
-      - run: python -c "import hashlib; with open('dist/grok_farewell${{ runner.os == 'Windows' && '.exe' || '' }}', 'rb') as f: print(hashlib.sha256(f.read()).hexdigest() + '  grok_farewell${{ runner.os == 'Windows' && '.exe' || '' }}')" > dist/CHECKSUM.txt
+      - name: Generate Checksum
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            python -c "import hashlib; with open('dist/grok_farewell.exe', 'rb') as f: print(hashlib.sha256(f.read()).hexdigest() + '  grok_farewell.exe')" > dist/CHECKSUM.txt
+          else
+            python -c "import hashlib; with open('dist/grok_farewell', 'rb') as f: print(hashlib.sha256(f.read()).hexdigest() + '  grok_farewell')" > dist/CHECKSUM.txt
+          fi
+        shell: bash
         if: runner.os != 'Android'
       - run: zip -r grok-farewell-${{ runner.os }}-${{ env.VERSION }}.zip dist/*
         if: runner.os != 'Android'
