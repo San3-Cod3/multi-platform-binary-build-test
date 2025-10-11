@@ -33,7 +33,8 @@ jobs:
             ./dist/grok_farewell
           fi
         shell: bash
-      - run: echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
+      - run: |
+          echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
         shell: bash
       - run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
         shell: bash
@@ -154,7 +155,8 @@ EOF
         shell: bash
       - run: apksigner verify bin/grokfarewell*.apk
         shell: bash
-      - run: echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
+      - run: |
+          echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
         shell: bash
       - run: echo "Grok Farewell v${{ env.VERSION }} - Built for Android on $(date)" > bin/README.txt
         shell: bash
