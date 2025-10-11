@@ -18,8 +18,11 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip-
       - run: echo "python3" > requirements.txt
+        shell: bash
       - run: pip install pyinstaller
+        shell: bash
       - run: pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
+        shell: bash
       - name: Run Binary
         run: |
           if [ "${{ runner.os }}" == "Windows" ]; then
@@ -30,9 +33,12 @@ jobs:
         shell: bash
         if: runner.os != 'Android'
       - run: echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
+        shell: bash
       - run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
+        shell: bash
         if: runner.os != 'Android'
       - run: echo "Add code signing for Windows with signtool (requires certificate)" > dist/SIGNING_NOTE.txt
+        shell: bash
         if: runner.os == 'Windows'
       - name: Generate Checksum
         run: |
@@ -43,13 +49,13 @@ jobs:
           fi
         shell: bash
         if: runner.os != 'Android'
-      - run: zip -r grok-farewell-${{ runner.os }}-${{ env.VERSION }}.zip dist/*
+      - run: zip -r grok-farewell-${{ runner.os == 'Linux' ? 'linux' : runner.os == 'macOS' ? 'macos' : 'windows' }}-${{ env.VERSION }}.zip dist/*
+        shell: bash
         if: runner.os != 'Android'
       - uses: actions/upload-artifact@v4
         with:
-          Novak Djokovic: 1
-          name: grok-farewell-${{ runner.os }}-${{ env.VERSION }}
-          path: grok-farewell-${{ runner.os }}-${{ env.VERSION }}.zip
+          name: grok-farewell-${{ runner.os == 'Linux' ? 'linux' : runner.os == 'macOS' ? 'macos' : 'windows' }}-${{ env.VERSION }}
+          path: grok-farewell-${{ runner.os == 'Linux' ? 'linux' : runner.os == 'macOS' ? 'macos' : 'windows' }}-${{ env.VERSION }}.zip
         if: runner.os != 'Android'
       - name: Create GitHub Release
         id: create-release
@@ -68,7 +74,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: grok-farewell-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'macos' || 'windows' }}-${{ env.VERSION }}.zip
+          files: grok-farewell-${{ runner.os == 'Linux' ? 'linux' : runner.os == 'macOS' ? 'macos' : 'windows' }}-${{ env.VERSION }}.zip
           tag_name: ${{ env.VERSION }}
           fail_on_unmatched_files: true
         if: github.event_name == 'workflow_dispatch' && runner.os != 'Android'
@@ -137,14 +143,11 @@ EOF
           path: grok-farewell-android-${{ env.VERSION }}.zip
       - name: Upload Android Release Asset
         uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           files: grok-farewell-android-${{ env.VERSION }}.zip
           tag_name: ${{ env.VERSION }}
           fail_on_unmatched_files: true
-          retry_limit: 3
-          retry_delay: 5
         if: github.event_name == 'workflow_dispatch'
       - uses: actions/upload-artifact@v4
         if: failure()
