@@ -71,8 +71,6 @@ jobs:
           files: grok-farewell-${{ runner.os }}-${{ env.VERSION }}.zip
           tag_name: ${{ env.VERSION }}
           fail_on_unmatched_files: true
-          retry_limit: 3
-          retry_delay: 5
         if: github.event_name == 'workflow_dispatch' && runner.os != 'Android'
   build-android:
     runs-on: ubuntu-latest
