@@ -125,7 +125,7 @@ jobs:
         shell: bash
       - run: echo "python3" > requirements.txt
         shell: bash
-      - run: pip install buildozer
+      - run: pip install buildozer cython
         shell: bash
       - name: Install Android dependencies
         run: |
@@ -154,6 +154,21 @@ jobs:
           echo 'android.archs = arm64-v8a, armeabi-v7a' >> buildozer.spec
           echo 'android.api = 34' >> buildozer.spec
           echo 'android.ndk = 25.2.9519653' >> buildozer.spec
+        shell: bash
+      - name: Create Buildozer Log Preparation Script
+        run: |
+          echo '#!/bin/bash' > prepare_buildozer_logs.sh
+          echo 'set -e' >> prepare_buildozer_logs.sh
+          echo 'if ls -l $HOME/.buildozer/android/platform/build-*/build.log >/dev/null 2>&1; then' >> prepare_buildozer_logs.sh
+          echo '  echo "Preparing Buildozer logs..."' >> prepare_buildozer_logs.sh
+          echo '  mkdir -p buildozer-logs' >> prepare_buildozer_logs.sh
+          echo '  cp $HOME/.buildozer/android/platform/build-*/build.log buildozer-logs/' >> prepare_buildozer_logs.sh
+          echo '  zip -r buildozer-logs.zip buildozer-logs/' >> prepare_buildozer_logs.sh
+          echo '  touch buildozer-logs-prepared' >> prepare_buildozer_logs.sh
+          echo 'else' >> prepare_buildozer_logs.sh
+          echo '  echo "No build logs found"' >> prepare_buildozer_logs.sh
+          echo 'fi' >> prepare_buildozer_logs.sh
+          chmod +x prepare_buildozer_logs.sh
         shell: bash
       - run: |
           for i in 1 2 3; do buildozer android debug && break; cat ~/.buildozer/android/platform/build-*/build.log; done
@@ -188,4 +203,17 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          files:
+          files: grok-farewell-android-${{ env.VERSION }}.zip
+          tag_name: ${{ env.VERSION }}
+          fail_on_unmatched_files: true
+        if: github.event_name == 'workflow_dispatch'
+      - name: Prepare Buildozer Logs
+        run: ./prepare_buildozer_logs.sh
+        shell: bash
+        if: failure()
+      - name: Upload Buildozer Logs on Failure
+        uses: actions/upload-artifact@v4
+        with:
+          name: buildozer-logs
+          path: buildozer-logs.zip
+        continue-on-error: true
