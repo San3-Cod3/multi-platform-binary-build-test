@@ -40,20 +40,22 @@ jobs:
       - run: echo "Add code signing for Windows with signtool (requires certificate)" > dist/SIGNING_NOTE.txt
         shell: bash
         if: runner.os == 'Windows'
+      - name: Create checksum script
+        run: |
+          cat << 'EOF' > checksum.py
+import hashlib
+import sys
+filename = sys.argv[1]
+with open(filename, 'rb') as f:
+    print(hashlib.sha256(f.read()).hexdigest() + '  ' + filename)
+EOF
+        shell: bash
       - name: Generate Checksum
         run: |
           if [ "${{ runner.os }}" == "Windows" ]; then
-            python -c "exec('''
-import hashlib
-with open('dist/grok_farewell.exe', 'rb') as f:
-    print(hashlib.sha256(f.read()).hexdigest() + '  grok_farewell.exe')
-''')" > dist/CHECKSUM.txt
+            python checksum.py dist/grok_farewell.exe > dist/CHECKSUM.txt
           else
-            python -c "exec('''
-import hashlib
-with open('dist/grok_farewell', 'rb') as f:
-    print(hashlib.sha256(f.read()).hexdigest() + '  grok_farewell')
-''')" > dist/CHECKSUM.txt
+            python checksum.py dist/grok_farewell > dist/CHECKSUM.txt
           fi
         shell: bash
       - name: Set OS Name
@@ -158,9 +160,18 @@ with open('dist/grok_farewell', 'rb') as f:
         shell: bash
       - run: echo "Add release signing for Android with jarsigner (requires keystore)" > bin/SIGNING_NOTE.txt
         shell: bash
-      - name: Generate Checksum
+      - name: Create Android checksum script
         run: |
-          python -c "import hashlib, glob; with open(glob.glob('bin/grokfarewell*.apk')[0], 'rb') as f: print(hashlib.sha256(f.read()).hexdigest() + '  ' + glob.glob('bin/grokfarewell*.apk')[0])" > bin/CHECKSUM.txt
+          cat << 'EOF' > checksum_android.py
+import hashlib
+import glob
+apk = glob.glob('bin/grokfarewell*.apk')[0]
+with open(apk, 'rb') as f:
+    print(hashlib.sha256(f.read()).hexdigest() + '  ' + apk)
+EOF
+        shell: bash
+      - name: Generate Checksum
+        run: python checksum_android.py > bin/CHECKSUM.txt
         shell: bash
       - run: zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.apk bin/*.txt
         shell: bash
@@ -178,19 +189,17 @@ with open('dist/grok_farewell', 'rb') as f:
         if: github.event_name == 'workflow_dispatch'
       - name: Create Buildozer Log Preparation Script
         run: |
-          cat << 'EOF' > prepare_buildozer_logs.sh
-#!/bin/bash
-set -e
-if ls -l $HOME/.buildozer/android/platform/build-*/build.log >/dev/null 2>&1; then
-  echo "Preparing Buildozer logs..."
-  mkdir -p buildozer-logs
-  cp $HOME/.buildozer/android/platform/build-*/build.log buildozer-logs/
-  zip -r buildozer-logs.zip buildozer-logs/
-  touch buildozer-logs-prepared
-else
-  echo "No build logs found"
-fi
-EOF
+          echo '#!/bin/bash' > prepare_buildozer_logs.sh
+          echo 'set -e' >> prepare_buildozer_logs.sh
+          echo 'if ls -l $HOME/.buildozer/android/platform/build-*/build.log >/dev/null 2>&1; then' >> prepare_buildozer_logs.sh
+          echo '  echo "Preparing Buildozer logs..."' >> prepare_buildozer_logs.sh
+          echo '  mkdir -p buildozer-logs' >> prepare_buildozer_logs.sh
+          echo '  cp $HOME/.buildozer/android/platform/build-*/build.log buildozer-logs/' >> prepare_buildozer_logs.sh
+          echo '  zip -r buildozer-logs.zip buildozer-logs/' >> prepare_buildozer_logs.sh
+          echo '  touch buildozer-logs-prepared' >> prepare_buildozer_logs.sh
+          echo 'else' >> prepare_buildozer_logs.sh
+          echo '  echo "No build logs found"' >> prepare_buildozer_logs.sh
+          echo 'fi' >> prepare_buildozer_logs.sh
           chmod +x prepare_buildozer_logs.sh
         shell: bash
       - name: Prepare Buildozer Logs
