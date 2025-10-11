@@ -76,7 +76,7 @@ jobs:
           prerelease: false
         if: github.event_name == 'workflow_dispatch' && runner.os == 'ubuntu-latest'
       - name: Upload Desktop Release Asset
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           files: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
@@ -120,21 +120,19 @@ jobs:
         shell: bash
       - name: Create buildozer.spec
         run: |
-          cat << 'EOF' > buildozer.spec
-[buildozer]
-log_level = 2
-warn_on_root = 1
-
-[app]
-title = Grok Farewell
-package.name = grokfarewell
-source.dir = .
-source.include_exts = py
-requirements = python3
-android.archs = arm64-v8a, armeabi-v7a
-android.api = 34
-android.ndk = 25.2.9519653
-EOF
+          echo '[buildozer]' > buildozer.spec
+          echo 'log_level = 2' >> buildozer.spec
+          echo 'warn_on_root = 1' >> buildozer.spec
+          echo '' >> buildozer.spec
+          echo '[app]' >> buildozer.spec
+          echo 'title = Grok Farewell' >> buildozer.spec
+          echo 'package.name = grokfarewell' >> buildozer.spec
+          echo 'source.dir = .' >> buildozer.spec
+          echo 'source.include_exts = py' >> buildozer.spec
+          echo 'requirements = python3' >> buildozer.spec
+          echo 'android.archs = arm64-v8a, armeabi-v7a' >> buildozer.spec
+          echo 'android.api = 34' >> buildozer.spec
+          echo 'android.ndk = 25.2.9519653' >> buildozer.spec
         shell: bash
       - run: |
           for i in 1 2 3; do buildozer android debug && break; cat ~/.buildozer/android/platform/build-*/build.log; done
@@ -159,7 +157,7 @@ EOF
           name: grok-farewell-android-${{ env.VERSION }}
           path: grok-farewell-android-${{ env.VERSION }}.zip
       - name: Upload Android Release Asset
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           files: grok-farewell-android-${{ env.VERSION }}.zip
@@ -168,20 +166,18 @@ EOF
         if: github.event_name == 'workflow_dispatch'
       - name: Create Buildozer Log Preparation Script
         run: |
-          cat << 'EOF' > prepare_buildozer_logs.sh
-          #!/bin/bash
-          set -e
-          if ls -l $HOME/.buildozer/android/platform/build-*/build.log >/dev/null 2>&1; then
-            echo "Preparing Buildozer logs..."
-            mkdir -p buildozer-logs
-            cp $HOME/.buildozer/android/platform/build-*/build.log buildozer-logs/
-            zip -r buildozer-logs.zip buildozer-logs/
-            echo "UPLOAD_PATH=buildozer-logs.zip" >> $GITHUB_ENV
-          else
-            echo "No build logs found"
-            echo "UPLOAD_PATH=" >> $GITHUB_ENV
-          fi
-          EOF
+          echo '#!/bin/bash' > prepare_buildozer_logs.sh
+          echo 'set -e' >> prepare_buildozer_logs.sh
+          echo 'if ls -l $HOME/.buildozer/android/platform/build-*/build.log >/dev/null 2>&1; then' >> prepare_buildozer_logs.sh
+          echo '  echo "Preparing Buildozer logs..."' >> prepare_buildozer_logs.sh
+          echo '  mkdir -p buildozer-logs' >> prepare_buildozer_logs.sh
+          echo '  cp $HOME/.buildozer/android/platform/build-*/build.log buildozer-logs/' >> prepare_buildozer_logs.sh
+          echo '  zip -r buildozer-logs.zip buildozer-logs/' >> prepare_buildozer_logs.sh
+          echo '  echo "UPLOAD_PATH=buildozer-logs.zip" >> $GITHUB_ENV' >> prepare_buildozer_logs.sh
+          echo 'else' >> prepare_buildozer_logs.sh
+          echo '  echo "No build logs found"' >> prepare_buildozer_logs.sh
+          echo '  echo "UPLOAD_PATH=" >> $GITHUB_ENV' >> prepare_buildozer_logs.sh
+          echo 'fi' >> prepare_buildozer_logs.sh
           chmod +x prepare_buildozer_logs.sh
         shell: bash
       - name: Prepare Buildozer Logs
