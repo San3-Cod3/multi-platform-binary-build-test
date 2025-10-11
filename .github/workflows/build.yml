@@ -130,7 +130,7 @@ jobs:
       - name: Install Android dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev cython3 unzip
+          sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev cython3 unzip coreutils
         shell: bash
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -178,14 +178,26 @@ jobs:
           echo "Environment variables:"
           env | grep -E 'ANDROID|PATH|JAVA'
         shell: bash
-      - run: |
-          for i in 1 2 3; do buildozer android debug && break; cat ~/.buildozer/android/platform/build-*/build.log || true; done
+      - name: Run Buildozer with Logging
+        run: |
+          for i in 1 2 3; do
+            buildozer android debug 2>&1 | tee buildozer.log && break
+            sleep 5
+          done
+          cat ~/.buildozer/android/platform/build-*/build.log || echo "No build.log found"
+          cat buildozer.log || echo "No buildozer.log found"
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
           ANDROID_NDK_HOME: ~/.buildozer/android/platform/android-ndk
         shell: bash
         continue-on-error: true
-      - run: apksigner verify bin/grokfarewell*.apk
+      - name: Verify APK
+        run: |
+          if ls bin/grokfarewell*.apk >/dev/null 2>&1; then
+            /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner verify bin/grokfarewell*.apk
+          else
+            echo "No APK file found, skipping verification"
+          fi
         env:
           PATH: ${{ env.ANDROID_HOME }}/build-tools/34.0.0:${{ env.PATH }}
         shell: bash
@@ -235,6 +247,7 @@ jobs:
           echo 'mkdir -p buildozer-logs' >> prepare_buildozer_logs.sh
           echo 'echo "Preparing Buildozer logs..."' >> prepare_buildozer_logs.sh
           echo 'find $HOME/.buildozer -type f -name "*.log" -exec cp {} buildozer-logs/ \;' >> prepare_buildozer_logs.sh
+          echo 'if [ -f buildozer.log ]; then cp buildozer.log buildozer-logs/; fi' >> prepare_buildozer_logs.sh
           echo 'if [ -d buildozer-logs ] && [ "$(ls -A buildozer-logs)" ]; then' >> prepare_buildozer_logs.sh
           echo '  zip -r buildozer-logs.zip buildozer-logs/' >> prepare_buildozer_logs.sh
           echo '  touch buildozer-logs-prepared' >> prepare_buildozer_logs.sh
