@@ -130,18 +130,24 @@ jobs:
       - name: Install Android dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev cython3
+          sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev cython3 unzip
         shell: bash
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platforms;android-34'
+          packages: 'platforms;android-34 build-tools;34.0.0'
       - name: Download Android NDK
         run: |
           mkdir -p ~/.buildozer/android/platform
           cd ~/.buildozer/android/platform
-          wget --tries=3 --timeout=60 https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-          unzip android-ndk-r25b-linux.zip
+          for i in 1 2 3; do
+            curl -L --retry 3 --connect-timeout 60 -o android-ndk-r25b-linux.zip https://dl.google.com/android/repository/android-ndk-r25b-linux.zip && break
+          done
+          if [ ! -f android-ndk-r25b-linux.zip ]; then
+            echo "Failed to download Android NDK"
+            exit 1
+          fi
+          unzip -q android-ndk-r25b-linux.zip
           mv android-ndk-r25b android-ndk
         shell: bash
       - run: buildozer init
@@ -163,29 +169,25 @@ jobs:
           echo 'android.api = 34' >> buildozer.spec
           echo 'android.ndk_path = ~/.buildozer/android/platform/android-ndk' >> buildozer.spec
         shell: bash
-      - name: Create Buildozer Log Preparation Script
+      - name: Debug Environment
         run: |
-          echo '#!/bin/bash' > prepare_buildozer_logs.sh
-          echo 'set -e' >> prepare_buildozer_logs.sh
-          echo 'if ls -l $HOME/.buildozer/android/platform/build-*/build.log >/dev/null 2>&1; then' >> prepare_buildozer_logs.sh
-          echo '  echo "Preparing Buildozer logs..."' >> prepare_buildozer_logs.sh
-          echo '  mkdir -p buildozer-logs' >> prepare_buildozer_logs.sh
-          echo '  cp $HOME/.buildozer/android/platform/build-*/build.log buildozer-logs/' >> prepare_buildozer_logs.sh
-          echo '  zip -r buildozer-logs.zip buildozer-logs/' >> prepare_buildozer_logs.sh
-          echo '  touch buildozer-logs-prepared' >> prepare_buildozer_logs.sh
-          echo 'else' >> prepare_buildozer_logs.sh
-          echo '  echo "No build logs found"' >> prepare_buildozer_logs.sh
-          echo 'fi' >> prepare_buildozer_logs.sh
-          chmod +x prepare_buildozer_logs.sh
+          echo "Listing directory contents:"
+          ls -la
+          echo "Buildozer directory contents:"
+          ls -la ~/.buildozer/android/platform
+          echo "Environment variables:"
+          env | grep -E 'ANDROID|PATH|JAVA'
         shell: bash
       - run: |
-          for i in 1 2 3; do buildozer android debug && break; cat ~/.buildozer/android/platform/build-*/build.log; done
+          for i in 1 2 3; do buildozer android debug && break; cat ~/.buildozer/android/platform/build-*/build.log || true; done
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+          ANDROID_NDK_HOME: ~/.buildozer/android/platform/android-ndk
         shell: bash
         continue-on-error: true
       - run: apksigner verify bin/grokfarewell*.apk
+        env:
+          PATH: ${{ env.ANDROID_HOME }}/build-tools/34.0.0:${{ env.PATH }}
         shell: bash
         continue-on-error: true
       - run: echo "Grok Farewell v${{ env.VERSION }} - Built for Android on $(date)" > bin/README.txt
@@ -196,15 +198,20 @@ jobs:
         run: |
           echo "import hashlib" > checksum_android.py
           echo "import glob" >> checksum_android.py
-          echo "apk = glob.glob('bin/grokfarewell*.apk')[0]" >> checksum_android.py
+          echo "import sys" >> checksum_android.py
+          echo "apk_files = glob.glob('bin/grokfarewell*.apk')" >> checksum_android.py
+          echo "if not apk_files:" >> checksum_android.py
+          echo "    print('No APK file found')" >> checksum_android.py
+          echo "    sys.exit(1)" >> checksum_android.py
+          echo "apk = apk_files[0]" >> checksum_android.py
           echo "with open(apk, 'rb') as f:" >> checksum_android.py
           echo "    print(hashlib.sha256(f.read()).hexdigest() + '  ' + apk)" >> checksum_android.py
         shell: bash
       - name: Generate Checksum
-        run: python checksum_android.py > bin/CHECKSUM.txt
+        run: python checksum_android.py > bin/CHECKSUM.txt || echo "No APK file found, skipping checksum" > bin/CHECKSUM.txt
         shell: bash
         continue-on-error: true
-      - run: zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.apk bin/*.txt
+      - run: zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.apk bin/*.txt || zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.txt
         shell: bash
         continue-on-error: true
       - uses: actions/upload-artifact@v4
@@ -221,13 +228,30 @@ jobs:
           fail_on_unmatched_files: true
         if: github.event_name == 'workflow_dispatch'
         continue-on-error: true
+      - name: Create Buildozer Log Preparation Script
+        run: |
+          echo '#!/bin/bash' > prepare_buildozer_logs.sh
+          echo 'set -e' >> prepare_buildozer_logs.sh
+          echo 'mkdir -p buildozer-logs' >> prepare_buildozer_logs.sh
+          echo 'echo "Preparing Buildozer logs..."' >> prepare_buildozer_logs.sh
+          echo 'find $HOME/.buildozer -type f -name "*.log" -exec cp {} buildozer-logs/ \;' >> prepare_buildozer_logs.sh
+          echo 'if [ -d buildozer-logs ] && [ "$(ls -A buildozer-logs)" ]; then' >> prepare_buildozer_logs.sh
+          echo '  zip -r buildozer-logs.zip buildozer-logs/' >> prepare_buildozer_logs.sh
+          echo '  touch buildozer-logs-prepared' >> prepare_buildozer_logs.sh
+          echo 'else' >> prepare_buildozer_logs.sh
+          echo '  echo "No build logs found"' >> prepare_buildozer_logs.sh
+          echo '  touch buildozer-logs-prepared' >> prepare_buildozer_logs.sh
+          echo 'fi' >> prepare_buildozer_logs.sh
+          chmod +x prepare_buildozer_logs.sh
+        shell: bash
       - name: Prepare Buildozer Logs
         run: ./prepare_buildozer_logs.sh
         shell: bash
         if: always()
-      - name: Upload Buildozer Logs on Failure
+      - name: Upload Buildozer Logs
         uses: actions/upload-artifact@v4
         with:
           name: buildozer-logs
           path: buildozer-logs.zip
+        if: always()
         continue-on-error: true
