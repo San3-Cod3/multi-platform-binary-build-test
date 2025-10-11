@@ -31,10 +31,12 @@ jobs:
             ./dist/grok_farewell
           fi
         shell: bash
+        if: runner.os != 'Android'
       - run: echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
         shell: bash
       - run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
         shell: bash
+        if: runner.os != 'Android'
       - run: echo "Add code signing for Windows with signtool (requires certificate)" > dist/SIGNING_NOTE.txt
         shell: bash
         if: runner.os == 'Windows'
@@ -46,12 +48,15 @@ jobs:
             python -c "import hashlib; with open('dist/grok_farewell', 'rb') as f: print(hashlib.sha256(f.read()).hexdigest() + '  grok_farewell')" > dist/CHECKSUM.txt
           fi
         shell: bash
+        if: runner.os != 'Android'
       - run: zip -r grok-farewell-${{ runner.os == 'Linux' ? 'linux' : (runner.os == 'macOS' ? 'macos' : 'windows') }}-${{ env.VERSION }}.zip dist/*
         shell: bash
+        if: runner.os != 'Android'
       - uses: actions/upload-artifact@v4
         with:
           name: grok-farewell-${{ runner.os == 'Linux' ? 'linux' : (runner.os == 'macOS' ? 'macos' : 'windows') }}-${{ env.VERSION }}
           path: grok-farewell-${{ runner.os == 'Linux' ? 'linux' : (runner.os == 'macOS' ? 'macos' : 'windows') }}-${{ env.VERSION }}.zip
+        if: runner.os != 'Android'
       - name: Create GitHub Release
         id: create-release
         uses: actions/create-release@v1
