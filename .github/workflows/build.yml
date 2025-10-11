@@ -68,7 +68,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: grok-farewell-${{ runner.os }}-${{ env.VERSION }}.zip
+          files: grok-farewell-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'macos' || 'windows' }}-${{ env.VERSION }}.zip
           tag_name: ${{ env.VERSION }}
           fail_on_unmatched_files: true
         if: github.event_name == 'workflow_dispatch' && runner.os != 'Android'
