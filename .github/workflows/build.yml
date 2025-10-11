@@ -21,6 +21,8 @@ jobs:
         shell: bash
       - run: pip install pyinstaller
         shell: bash
+      - run: mkdir -p spec
+        shell: bash
       - run: pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
         shell: bash
       - name: Run Binary
@@ -115,7 +117,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          sdk-version: '34'
+          packages: 'platforms;android-34'
       - run: buildozer init
         shell: bash
       - name: Create buildozer.spec
