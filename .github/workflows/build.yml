@@ -76,7 +76,7 @@ jobs:
           prerelease: false
         if: github.event_name == 'workflow_dispatch' && runner.os == 'ubuntu-latest'
       - name: Upload Desktop Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: actions/create-release@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           files: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
@@ -159,15 +159,18 @@ EOF
           name: grok-farewell-android-${{ env.VERSION }}
           path: grok-farewell-android-${{ env.VERSION }}.zip
       - name: Upload Android Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: actions/create-release@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           files: grok-farewell-android-${{ env.VERSION }}.zip
           tag_name: ${{ env.VERSION }}
           fail_on_unmatched_files: true
         if: github.event_name == 'workflow_dispatch'
-      - name: Prepare Buildozer Logs
+      - name: Create Buildozer Log Preparation Script
         run: |
+          cat << 'EOF' > prepare_buildozer_logs.sh
+          #!/bin/bash
+          set -e
           if ls -l $HOME/.buildozer/android/platform/build-*/build.log >/dev/null 2>&1; then
             echo "Preparing Buildozer logs..."
             mkdir -p buildozer-logs
@@ -178,6 +181,11 @@ EOF
             echo "No build logs found"
             echo "UPLOAD_PATH=" >> $GITHUB_ENV
           fi
+          EOF
+          chmod +x prepare_buildozer_logs.sh
+        shell: bash
+      - name: Prepare Buildozer Logs
+        run: ./prepare_buildozer_logs.sh
         shell: bash
       - name: Upload Buildozer Logs on Failure
         uses: actions/upload-artifact@v4
