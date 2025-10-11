@@ -173,10 +173,9 @@ jobs:
           echo '  mkdir -p buildozer-logs' >> prepare_buildozer_logs.sh
           echo '  cp $HOME/.buildozer/android/platform/build-*/build.log buildozer-logs/' >> prepare_buildozer_logs.sh
           echo '  zip -r buildozer-logs.zip buildozer-logs/' >> prepare_buildozer_logs.sh
-          echo '  echo "UPLOAD_PATH=buildozer-logs.zip" >> $GITHUB_ENV' >> prepare_buildozer_logs.sh
+          echo '  touch buildozer-logs-prepared' >> prepare_buildozer_logs.sh
           echo 'else' >> prepare_buildozer_logs.sh
           echo '  echo "No build logs found"' >> prepare_buildozer_logs.sh
-          echo '  echo "UPLOAD_PATH=" >> $GITHUB_ENV' >> prepare_buildozer_logs.sh
           echo 'fi' >> prepare_buildozer_logs.sh
           chmod +x prepare_buildozer_logs.sh
         shell: bash
@@ -185,7 +184,8 @@ jobs:
         shell: bash
       - name: Upload Buildozer Logs on Failure
         uses: actions/upload-artifact@v4
-        if: failure() && env.UPLOAD_PATH != ''
+        if: failure()
         with:
           name: buildozer-logs
-          path: ${{ env.UPLOAD_PATH }}
+          path: buildozer-logs.zip
+        continue-on-error: true
