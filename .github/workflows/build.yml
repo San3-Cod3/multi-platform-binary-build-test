@@ -10,6 +10,10 @@ jobs:
   ############################################
   build-android:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/.buildozer/android/platform/android-sdk
+      ANDROID_NDK_ROOT: ${{ github.workspace }}/.buildozer/android/platform/android-ndk
+      VERSION: v1.0.0
     steps:
       - uses: actions/checkout@v4  # Checkout repo code
 
@@ -25,7 +29,7 @@ jobs:
           key: android-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: android-pip-
 
-      - run: pip install buildozer cython
+      - run: pip install --upgrade buildozer cython
         shell: bash
 
       # Generate buildozer.spec on-the-fly
@@ -41,8 +45,12 @@ jobs:
           version = 0.1
           requirements = python3,kivy
           orientation = portrait
+
           [buildozer]
           log_level = 2
+          android.api = 33
+          android.ndk_path = $ANDROID_NDK_ROOT
+          android.sdk_path = $ANDROID_SDK_ROOT
           EOT
         shell: bash
 
@@ -53,39 +61,42 @@ jobs:
           sudo apt-get install -y \
             openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev \
             libncursesw5-dev build-essential cmake libffi-dev cython3 \
-            unzip coreutils autoconf automake libtool
+            unzip coreutils autoconf automake libtool wget
         shell: bash
 
-      # Setup Android SDK
+      # Setup Android SDK Command Line Tools
       - name: Setup Android SDK
         run: |
-          SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
-          mkdir -p $SDK_ROOT/cmdline-tools/latest
-          curl -L -o cmdline-tools.zip \
-            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip -q cmdline-tools.zip -d $SDK_ROOT/cmdline-tools/latest
-          # Move inner folder contents to 'latest'
-          mv $SDK_ROOT/cmdline-tools/latest/cmdline-tools/* $SDK_ROOT/cmdline-tools/latest/
-          rm -rf $SDK_ROOT/cmdline-tools/latest/cmdline-tools
+          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+          cd $ANDROID_SDK_ROOT/cmdline-tools
+          curl -L -o cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q cmdline-tools.zip
+          mv cmdline-tools latest
           rm cmdline-tools.zip
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-33"
         shell: bash
 
-      # Download Android NDK
-      - name: Download Android NDK
+      # Download and set up Android NDK
+      - name: Setup Android NDK
         run: |
           PLATFORM_DIR="$HOME/.buildozer/android/platform"
           mkdir -p $PLATFORM_DIR
           cd $PLATFORM_DIR
-          curl -L -o android-ndk-r25b-linux.zip \
-            https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
+          curl -L -o android-ndk-r25b-linux.zip https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
           unzip -q android-ndk-r25b-linux.zip
           mv android-ndk-r25b android-ndk
+          rm android-ndk-r25b-linux.zip
         shell: bash
 
+      # Build APK
       - name: Build Android APK
-        run: buildozer -v android debug
+        run: |
+          buildozer android debug
         shell: bash
 
+      # Upload artifact
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -100,6 +111,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      VERSION: v1.0.0
 
     steps:
       - uses: actions/checkout@v4
@@ -134,11 +147,6 @@ jobs:
           else
             ./dist/grok_farewell
           fi
-        shell: bash
-
-      - name: Set Version
-        run: |
-          echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
         shell: bash
 
       - name: Create README
