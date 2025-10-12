@@ -1,4 +1,6 @@
+---
 name: Build Python Binaries
+
 on:
   push:
   workflow_dispatch:
@@ -39,6 +41,7 @@ jobs:
 
       - run: mkdir -p spec
         shell: bash
+        # Create spec directory for PyInstaller
 
       - run: pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
         shell: bash
@@ -143,6 +146,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        # Checkout repository code
 
       - name: Lint YAML
         run: |
@@ -212,7 +216,8 @@ jobs:
         run: |
           mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
           cd ~/.buildozer/android/platform/android-sdk/cmdline-tools
-          curl -L -o commandlinetools-linux_latest.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          curl -L -o commandlinetools-linux_latest.zip \
+            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip -q commandlinetools-linux_latest.zip
           mv cmdline-tools latest
         shell: bash
@@ -221,7 +226,8 @@ jobs:
         run: |
           mkdir -p ~/.buildozer/android/platform
           cd ~/.buildozer/android/platform
-          curl -L -o android-ndk-r25b-linux.zip https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
+          curl -L -o android-ndk-r25b-linux.zip \
+            https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
           unzip -q android-ndk-r25b-linux.zip
           mv android-ndk-r25b android-ndk
         shell: bash
@@ -246,7 +252,8 @@ jobs:
           echo "        with current_directory(self.get_build_dir(arch.arch)):" >> $LIBFFI_PATH
           echo "            shprint(sh.Command('autoreconf'), '-vif', _env=env)" >> $LIBFFI_PATH
           echo "            configure = sh.Command('./configure')" >> $LIBFFI_PATH
-          echo "            shprint(configure, '--host=' + arch.command_prefix, '--prefix={}'.format(self.get_build_dir(arch.arch)), '--disable-builddir', '--enable-static', '--disable-docs', _env=env)" >> $LIBFFI_PATH
+          echo "            shprint(configure, '--host=' + arch.command_prefix, \\" >> $LIBFFI_PATH
+          echo "                '--prefix={}'.format(self.get_build_dir(arch.arch)), '--disable-builddir', '--enable-static', '--disable-docs', _env=env)" >> $LIBFFI_PATH
           echo "            shprint(sh.make, _env=env)" >> $LIBFFI_PATH
           echo "" >> $LIBFFI_PATH
           echo "recipe = LibffiRecipe()" >> $LIBFFI_PATH
