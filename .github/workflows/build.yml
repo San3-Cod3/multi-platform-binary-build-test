@@ -101,9 +101,9 @@ jobs:
           # Debug: Check contents of cmdline-tools directory
           ls -la cmdline-tools
           # Move cmdline-tools to latest
-          rm -rf latest
-          mkdir -p latest
-          mv cmdline-tools/* latest/ || { echo "Failed to move cmdline-tools/* to latest"; exit 1; }
+          ##########rm -rf latest
+          ##########mkdir -p latest
+          ##########mv cmdline-tools/* latest/ || { echo "Failed to move cmdline-tools/* to latest"; exit 1; }
           # Debug: Check final cmdline-tools structure
           ls -la $ANDROID_SDK_ROOT/cmdline-tools/latest
           # Set PATH to include sdkmanager
@@ -113,9 +113,24 @@ jobs:
           sdkmanager --version
 
           # Create symlink for compatibility with Buildozer (expects sdkmanager in tools/bin)
-          mkdir -p $ANDROID_SDK_ROOT/tools/bin
-          ln -s $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager $ANDROID_SDK_ROOT/tools/bin/sdkmanager
+          ##########mkdir -p $ANDROID_SDK_ROOT/tools/bin
+          ##########ln -s $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager $ANDROID_SDK_ROOT/tools/bin/sdkmanager
+          #
+          
+          # Move extracted cmdline-tools into latest folder
+          rm -rf latest
+          mkdir -p latest
+          mv cmdline-tools/* latest/
 
+          # Fix for Buildozer: create symlinks
+          mkdir -p $ANDROID_SDK_ROOT/tools
+          ln -s $ANDROID_SDK_ROOT/cmdline-tools/latest $ANDROID_SDK_ROOT/tools/cmdline-tools
+          ln -s $ANDROID_SDK_ROOT/tools/cmdline-tools/bin/sdkmanager $ANDROID_SDK_ROOT/tools/bin/sdkmanager
+
+          # Make sure PATH includes sdkmanager
+          export PATH=$ANDROID_SDK_ROOT/tools/bin:$PATH
+          
+          #
           # Pre-create licenses directory
           mkdir -p $ANDROID_SDK_ROOT/licenses
 
