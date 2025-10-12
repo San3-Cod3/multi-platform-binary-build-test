@@ -131,7 +131,7 @@ jobs:
       - name: Install Android dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev cython3 unzip coreutils
+          sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev cython3 unzip coreutils autoconf automake libtool
         shell: bash
       - name: Setup Android SDK
         run: |
@@ -174,6 +174,36 @@ jobs:
           fi
           unzip -q android-ndk-r25b-linux.zip
           mv android-ndk-r25b android-ndk
+        shell: bash
+      - name: Patch libffi Recipe
+        run: |
+          mkdir -p ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi
+          cat > ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py << 'EOF'
+from pythonforandroid.recipe import CythonRecipe
+from pythonforandroid.logger import shprint
+from pythonforandroid.util import current_directory
+import sh
+
+class LibffiRecipe(CythonRecipe):
+    version = '3.4.6'
+    url = 'https://github.com/libffi/libffi/releases/download/v{version}/libffi-{version}.tar.gz'
+    depends = []
+    call_hostpython_via_targetpython = False
+
+    def build_arch(self, arch):
+        env = self.get_recipe_env(arch)
+        with current_directory(self.get_build_dir(arch.arch)):
+            shprint(sh.Command('autoreconf'), '-vif', _env=env)
+            configure = sh.Command('./configure')
+            shprint(configure, '--host=' + arch.command_prefix,
+                    '--prefix={}'.format(self.get_build_dir(arch.arch)),
+                    '--disable-builddir',
+                    '--enable-static',
+                    '--disable-docs', _env=env)
+            shprint(sh.make, _env=env)
+
+recipe = LibffiRecipe()
+EOF
         shell: bash
       - run: buildozer init
         shell: bash
