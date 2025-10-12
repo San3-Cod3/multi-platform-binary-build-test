@@ -17,22 +17,13 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: ${{ runner.os }}-pip-
-
-      - run: pip install pyinstaller
-        shell: bash
-
-      - run: mkdir -p spec
-        shell: bash
+      - name: Install PyInstaller
+        run: pip install pyinstaller
 
       - name: Build Desktop Binary
-        run: pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
-        shell: bash
+        run: |
+          mkdir -p dist spec
+          pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
 
       - name: Create Checksum
         run: |
@@ -41,10 +32,10 @@ import hashlib
 import os
 
 filename = "./dist/grok_farewell"
-if os.name == 'nt':
+if os.name == "nt":
     filename += ".exe"
 
-with open(filename, 'rb') as f:
+with open(filename, "rb") as f:
     checksum = hashlib.sha256(f.read()).hexdigest()
 
 with open("dist/CHECKSUM.txt", "w") as out:
@@ -60,7 +51,6 @@ PYTHON
           else
             echo "OS_NAME=windows" >> $GITHUB_ENV
           fi
-        shell: bash
 
       - name: Zip Artifact
         run: |
@@ -69,50 +59,8 @@ PYTHON
           else
             zip -r "grok-farewell-${{ env.OS_NAME }}.zip" dist/
           fi
-        shell: bash
 
       - uses: actions/upload-artifact@v4
         with:
           name: grok-farewell-${{ env.OS_NAME }}
           path: grok-farewell-${{ env.OS_NAME }}.zip
-
-  build-android:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev \
-            libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev \
-            cython3 unzip coreutils autoconf automake libtool
-          pip install buildozer cython
-        shell: bash
-
-      - name: Initialize Buildozer
-        run: buildozer init
-        shell: bash
-
-      - name: Create buildozer.spec
-        run: |
-          echo "[app]" > buildozer.spec
-          echo "title = Grok Farewell" >> buildozer.spec
-          echo "package.name = grokfarewell" >> buildozer.spec
-          echo "source.dir = ." >> buildozer.spec
-          echo "source.include_exts = py" >> buildozer.spec
-          echo "source.main = grok_farewell.py" >> buildozer.spec
-          echo "version = 1.0.0" >> buildozer.spec
-          echo "requirements = python3" >> buildozer.spec
-          echo "android.archs = arm64-v8a, armeabi-v7a" >> buildozer.spec
-          echo "android.api = 34" >> buildozer.spec
-        shell: bash
-
-      - name: Build APK
-        run: buildozer android debug
-        shell: bash
