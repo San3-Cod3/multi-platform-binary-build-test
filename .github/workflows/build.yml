@@ -98,13 +98,12 @@ jobs:
       - name: Zip Artifact (Windows)
         run: Compress-Archive -Path dist* -DestinationPath "grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip"
         if: runner.os == 'Windows'
-        shell: pwsh
+        shell: pwsh  # Zip Windows artifact
 
       - uses: actions/upload-artifact@v4
         with:
           name: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}
-          path: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
-        # Upload built artifact
+          path: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip  # Upload built artifact
 
       - name: Create GitHub Release
         id: create-release
@@ -193,6 +192,7 @@ jobs:
       - run: pip install buildozer cython
         shell: bash
 
+      # Install Android SDK/NDK, Buildozer dependencies
       - name: Install Android dependencies
         run: |
           sudo apt-get update
@@ -222,6 +222,7 @@ jobs:
           mv android-ndk-r25b android-ndk
         shell: bash
 
+      # Patch libffi for Android build
       - name: Patch libffi Recipe
         run: |
           mkdir -p ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi
