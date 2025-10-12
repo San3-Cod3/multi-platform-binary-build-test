@@ -32,12 +32,18 @@ jobs:
       - run: pip install --upgrade buildozer cython
         shell: bash
 
-      - name: Update pyjnius recipe for Python 3.11 compatibility
+      - name: Create custom pyjnius recipe
         run: |
-          RECIPE_PATH="$HOME/.local/lib/python3.10/site-packages/pythonforandroid/recipes/pyjnius/__init__.py"
-          sed -i 's/version = "1.4.2"/version = "1.5.0"/' $RECIPE_PATH
-          sed -i 's|url = "https://github.com/kivy/pyjnius/archive/1.4.2.zip"|url = "https://github.com/kivy/pyjnius/archive/1.5.0.zip"|' $RECIPE_PATH
-          sed -i '/patches = \[/,/^\s*\]/d' $RECIPE_PATH
+          mkdir -p recipes/pyjnius
+          cat << EOF > recipes/pyjnius/__init__.py
+          from pythonforandroid.recipe import CythonRecipe
+          class PyjniusRecipe(CythonRecipe):
+              version = '1.6.1'
+              url = 'https://github.com/kivy/pyjnius/archive/{version}.zip'
+              call_hostpython_via_targetpython = False
+              install_in_hostpython = False
+          recipe = PyjniusRecipe()
+          EOF
         shell: bash
 
       # Generate buildozer.spec on-the-fly
@@ -51,7 +57,7 @@ jobs:
           source.include_exts = py
           source.dir = .
           version = 0.1
-          requirements = python3,kivy
+          requirements = python3,kivy,pyjnius
           orientation = portrait
 
           [buildozer]
