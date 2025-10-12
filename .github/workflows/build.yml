@@ -104,6 +104,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Lint YAML
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yamllint
+          yamllint -c <(echo -e "extends: default\nrules:\n  indentation: {spaces: 2, indent-sequences: no}\n  line-length: disable") .github/workflows/build.yml
+        shell: bash
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
@@ -194,11 +200,7 @@ class LibffiRecipe(CythonRecipe):
         with current_directory(self.get_build_dir(arch.arch)):
             shprint(sh.Command('autoreconf'), '-vif', _env=env)
             configure = sh.Command('./configure')
-            shprint(configure, '--host=' + arch.command_prefix,
-                    '--prefix={}'.format(self.get_build_dir(arch.arch)),
-                    '--disable-builddir',
-                    '--enable-static',
-                    '--disable-docs', _env=env)
+            shprint(configure, '--host=' + arch.command_prefix, '--prefix={}'.format(self.get_build_dir(arch.arch)), '--disable-builddir', '--enable-static', '--disable-docs', _env=env)
             shprint(sh.make, _env=env)
 
 recipe = LibffiRecipe()
