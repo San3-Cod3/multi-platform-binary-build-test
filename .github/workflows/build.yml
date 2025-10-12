@@ -79,18 +79,27 @@ jobs:
           mkdir -p $ANDROID_SDK_ROOT/licenses
 
           # --- New Fix: auto-accept all licenses ---
-          yes | sdkmanager --licenses || true
+          #yes | sdkmanager --licenses || true
           # -----------------------------------------
+
+          # Accept all licenses explicitly
+          yes | sdkmanager --licenses --sdk_root=$ANDROID_SDK_ROOT || true
+
+          # Install required packages
+          yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-33" "build-tools;36.1.0" || true
+
+          # Verify installation
+          ls -la $ANDROID_SDK_ROOT/build-tools
 
           # --- New Fix: auto-accept all licenses ---
           #yes | sdkmanager --licenses || true
           # -----------------------------------------
 
           # Now safely install required packages
-          sdkmanager --update
+          #sdkmanager --update
           #yes | sdkmanager "platform-tools" "platforms;android-33" "build-tools;36.1.0"
           #sdkmanager "platform-tools" "platforms;android-33" "build-tools;36.1.0" || true
-          sdkmanager "platform-tools" "platforms;android-33" "build-tools;36.1.0"
+          #sdkmanager "platform-tools" "platforms;android-33" "build-tools;36.1.0"
           # abc
           # Now safely install required packages
           #yes | sdkmanager --update || true
