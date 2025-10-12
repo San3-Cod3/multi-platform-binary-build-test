@@ -1,5 +1,7 @@
 name: Build Python Binaries
-on: [push, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
 
 jobs:
   build-desktop:
@@ -22,34 +24,19 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip-
 
-      - run: echo "python3" > requirements.txt
-        shell: bash
-
       - run: pip install pyinstaller
         shell: bash
 
       - run: mkdir -p spec
         shell: bash
 
-      - run: pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
-        shell: bash
-
-      - name: Run Binary
-        run: |
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            ./dist/grok_farewell.exe
-          else
-            ./dist/grok_farewell
-          fi
-        shell: bash
-
-      - name: Set Version
-        run: echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
+      - name: Build Desktop Binary
+        run: pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
         shell: bash
 
       - name: Create Checksum
         run: |
-          python - <<EOF
+          python - <<PYTHON
 import hashlib
 import os
 
@@ -62,7 +49,7 @@ with open(filename, 'rb') as f:
 
 with open("dist/CHECKSUM.txt", "w") as out:
     out.write(checksum + "  " + filename + "\n")
-EOF
+PYTHON
 
       - name: Set OS Name
         run: |
@@ -75,20 +62,19 @@ EOF
           fi
         shell: bash
 
-      - name: Zip Artifact (Linux/macOS)
-        run: zip -r grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip dist/
-        if: runner.os != 'Windows'
+      - name: Zip Artifact
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            powershell Compress-Archive -Path dist/* -DestinationPath "grok-farewell-${{ env.OS_NAME }}.zip"
+          else
+            zip -r "grok-farewell-${{ env.OS_NAME }}.zip" dist/
+          fi
         shell: bash
-
-      - name: Zip Artifact (Windows)
-        run: Compress-Archive -Path dist* -DestinationPath "grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip"
-        if: runner.os == 'Windows'
-        shell: pwsh
 
       - uses: actions/upload-artifact@v4
         with:
-          name: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}
-          path: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
+          name: grok-farewell-${{ env.OS_NAME }}
+          path: grok-farewell-${{ env.OS_NAME }}.zip
 
   build-android:
     runs-on: ubuntu-latest
@@ -100,64 +86,33 @@ EOF
         with:
           python-version: '3.10'
 
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: android-pip-${{ hashFiles('*/requirements.txt') }}
-          restore-keys: android-pip-
-
-      - name: Cache Buildozer
-        uses: actions/cache@v4
-        with:
-          path: ~/.buildozer
-          key: android-buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-          restore-keys: android-buildozer-${{ runner.os }}-
-
-      - run: |
-          echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
-        shell: bash
-
-      - run: echo "python3" > requirements.txt
-        shell: bash
-
-      - run: pip install buildozer cython
-        shell: bash
-
-      - name: Install Android dependencies
+      - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev \
             libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev \
             cython3 unzip coreutils autoconf automake libtool
+          pip install buildozer cython
         shell: bash
 
-      - run: buildozer init
+      - name: Initialize Buildozer
+        run: buildozer init
         shell: bash
 
       - name: Create buildozer.spec
         run: |
-          echo "[buildozer]" > buildozer.spec
-          echo "log_level = 2" >> buildozer.spec
-          echo "warn_on_root = 1" >> buildozer.spec
-          echo "" >> buildozer.spec
-          echo "[app]" >> buildozer.spec
+          echo "[app]" > buildozer.spec
           echo "title = Grok Farewell" >> buildozer.spec
           echo "package.name = grokfarewell" >> buildozer.spec
           echo "source.dir = ." >> buildozer.spec
           echo "source.include_exts = py" >> buildozer.spec
           echo "source.main = grok_farewell.py" >> buildozer.spec
-          echo "version = ${{ env.VERSION }}" >> buildozer.spec
+          echo "version = 1.0.0" >> buildozer.spec
           echo "requirements = python3" >> buildozer.spec
           echo "android.archs = arm64-v8a, armeabi-v7a" >> buildozer.spec
           echo "android.api = 34" >> buildozer.spec
-          echo "android.ndk_path = ~/.buildozer/android/platform/android-ndk" >> buildozer.spec
         shell: bash
 
-      - name: Run Buildozer Android
+      - name: Build APK
         run: buildozer android debug
         shell: bash
-        env:
-          ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
-          ANDROID_NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk
-          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
