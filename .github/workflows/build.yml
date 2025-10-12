@@ -63,9 +63,11 @@ jobs:
             libncursesw5-dev build-essential cmake libffi-dev cython3 \
             #unzip coreutils autoconf automake libtool wget
             ##unzip coreutils autoconf automake libtool libtool-bin pkg-config wget
-            ####unzip autoconf automake libtool libtool-bin pkg-config wget
+            ###unzip autoconf automake libtool libtool-bin pkg-config wget
             # SOME ARE PACKAGES or SYSTEM PACKAGES AND CAN'T BE UNZIPPED AS NOT A ZIP
-            unzip libtool libtool-bin pkg-config wget
+            ####unzip libtool libtool-bin pkg-config wget
+            # four #hash bot tried as guessed same thing; not zip
+            #####unzip libtool-bin pkg-config wget
         shell: bash
       
       # Fix libffi autoreconf macro issue (LT_SYS_SYMBOL_USCORE)
