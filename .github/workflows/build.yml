@@ -237,7 +237,7 @@ jobs:
       - name: Create buildozer.spec
         run: |
           echo '[buildozer]' > buildozer.spec
-          echo 'log_level = 2' >> buildozer.spec
+          echo 'log_level = 2' > buildozer.spec
           echo 'warn_on_root = 1' >> buildozer.spec
           echo '' >> buildozer.spec
           echo '[app]' >> buildozer.spec
