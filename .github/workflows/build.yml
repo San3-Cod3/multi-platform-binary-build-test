@@ -1,3 +1,4 @@
+---
 name: Build Python Binaries
 on: [push, workflow_dispatch]
 
@@ -123,8 +124,7 @@ jobs:
           echo "  document-start: {present: true}" >> yamllint-config.yml
           echo "  trailing-spaces: {level: error}" >> yamllint-config.yml
           echo "  new-line-at-end-of-file: {level: error}" >> yamllint-config.yml
-          yamllint -c yamllint-config.yml .github/workflows/build.yml || 
-            { echo "YAML linting failed"; cat .github/workflows/build.yml | nl -ba; exit 1; }
+          yamllint -c yamllint-config.yml .github/workflows/build.yml || { echo "YAML linting failed"; cat .github/workflows/build.yml | nl -ba; exit 1; }
         shell: bash
       - name: Lint YAML Debug
         run: |
@@ -230,9 +230,9 @@ jobs:
           echo "        with current_directory(self.get_build_dir(arch.arch)):" >> $LIBFFI_PATH
           echo "            shprint(sh.Command('autoreconf'), '-vif', _env=env)" >> $LIBFFI_PATH
           echo "            configure = sh.Command('./configure')" >> $LIBFFI_PATH
-          echo "            shprint(configure, '--host=' + arch.command_prefix, \" >> $LIBFFI_PATH
-          echo "                    '--prefix={}'.format(self.get_build_dir(arch.arch)), \" >> $LIBFFI_PATH
-          echo "                    '--disable-builddir', '--enable-static', \" >> $LIBFFI_PATH
+          echo "            shprint(configure, '--host=' + arch.command_prefix, \\" >> $LIBFFI_PATH
+          echo "                    '--prefix={}'.format(self.get_build_dir(arch.arch)), \\" >> $LIBFFI_PATH
+          echo "                    '--disable-builddir', '--enable-static', \\" >> $LIBFFI_PATH
           echo "                    '--disable-docs', _env=env)" >> $LIBFFI_PATH
           echo "            shprint(sh.make, _env=env)" >> $LIBFFI_PATH
           echo "" >> $LIBFFI_PATH
