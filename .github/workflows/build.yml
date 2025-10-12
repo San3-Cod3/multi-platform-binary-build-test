@@ -1,10 +1,10 @@
-name: Build Multi-Platform Binary
+name: Build Multi-Platform Python Binary
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
 
 jobs:
   build-desktop:
@@ -12,50 +12,50 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.10]
+        python-version: [3.11]
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install PyInstaller
-      run: |
-        python -m pip install --upgrade pip
-        pip install pyinstaller
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
 
-    - name: Create directories
-      run: |
-        python -c "import os; os.makedirs('dist', exist_ok=True); os.makedirs('spec', exist_ok=True)"
+      - name: Prepare build directories
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            powershell -Command "New-Item -ItemType Directory -Force -Path dist,spec"
+          else
+            mkdir -p dist spec
+          fi
 
-    - name: Build Desktop Binary
-      run: |
-        pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
+      - name: Build executable
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            pyinstaller --onefile main.py --distpath dist --workpath spec
+          else
+            pyinstaller --onefile main.py --distpath dist --workpath spec
+          fi
 
-    - name: Generate checksum
-      run: |
-        import hashlib
-        import sys
-        import os
+      - name: Generate checksum
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            python -c "import hashlib, os; f=open(os.path.join('dist','main.exe'),'rb'); print(hashlib.sha256(f.read()).hexdigest())" > dist/CHECKSUM.txt
+          else
+            python -c "import hashlib; f=open('./dist/main','rb'); print(hashlib.sha256(f.read()).hexdigest())" > dist/CHECKSUM.txt
 
-        binary_name = "grok_farewell"
-        if sys.platform.startswith("win"):
-            binary_name += ".exe"
-        binary_path = os.path.join("dist", binary_name)
-
-        with open(binary_path, "rb") as f:
-            checksum = hashlib.sha256(f.read()).hexdigest()
-
-        with open("dist/CHECKSUM.txt", "w") as out:
-            out.write(checksum + "\n")
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: desktop-binaries-${{ matrix.os }}
-        path: |
-          dist/*
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-binary-${{ matrix.os }}
+          path: dist/
