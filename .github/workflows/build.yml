@@ -1,4 +1,3 @@
----
 name: Build Python Binaries
 
 on:
@@ -23,7 +22,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: android-pip-${{ hashFiles('*/requirements.txt') }}
+          key: android-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: android-pip-
 
       - run: pip install buildozer cython
@@ -57,20 +56,26 @@ jobs:
             unzip coreutils autoconf automake libtool
         shell: bash
 
+      # Setup Android SDK
       - name: Setup Android SDK
         run: |
-          mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
-          cd ~/.buildozer/android/platform/android-sdk/cmdline-tools
-          curl -L -o commandlinetools-linux_latest.zip \
+          SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
+          mkdir -p $SDK_ROOT/cmdline-tools/latest
+          curl -L -o cmdline-tools.zip \
             https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip -q commandlinetools-linux_latest.zip
-          mv cmdline-tools latest
+          unzip -q cmdline-tools.zip -d $SDK_ROOT/cmdline-tools/latest
+          # Move inner folder contents to 'latest'
+          mv $SDK_ROOT/cmdline-tools/latest/cmdline-tools/* $SDK_ROOT/cmdline-tools/latest/
+          rm -rf $SDK_ROOT/cmdline-tools/latest/cmdline-tools
+          rm cmdline-tools.zip
         shell: bash
 
+      # Download Android NDK
       - name: Download Android NDK
         run: |
-          mkdir -p ~/.buildozer/android/platform
-          cd ~/.buildozer/android/platform
+          PLATFORM_DIR="$HOME/.buildozer/android/platform"
+          mkdir -p $PLATFORM_DIR
+          cd $PLATFORM_DIR
           curl -L -o android-ndk-r25b-linux.zip \
             https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
           unzip -q android-ndk-r25b-linux.zip
@@ -106,8 +111,8 @@ jobs:
       - name: Cache pip
         uses: actions/cache@v4
         with:
-          path: /.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('/requirements.txt') }}
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip-
 
       - run: echo "python3" > requirements.txt
@@ -131,11 +136,13 @@ jobs:
           fi
         shell: bash
 
-      - run: |
+      - name: Set Version
+        run: |
           echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
         shell: bash
 
-      - run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
+      - name: Create README
+        run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
         shell: bash
 
       - name: Zip Artifact (Linux/macOS)
