@@ -70,7 +70,7 @@ jobs:
             #####unzip libtool-bin pkg-config wget
             # LET'S INSTALL THINGS INSTEAD
             sudo apt-get update -qq
-            sudo apt-get install -y autoconf automake libtool libtool-bin pkg-config wget
+            sudo apt-get install -y autoconf automake libtool m4 libtool-bin pkg-config wget
         shell: bash
       
       # Fix libffi autoreconf macro issue (LT_SYS_SYMBOL_USCORE)
@@ -79,9 +79,12 @@ jobs:
           echo "Ensuring libtool macros are visible..."
           export ACLOCAL_PATH=/usr/share/aclocal
           export M4_PATTERN_ALLOW="LT_SYS_SYMBOL_USCORE"
-          libtoolize --version
-          autoconf --version
-          automake --version
+          libtoolize --force --copy
+          autoreconf -ivf
+          #libtoolize --version
+          #autoconf --version
+          #automake --version
+          # Last three lines commented out
         shell: bash
       
       # Setup Android SDK Command Line Tools (with license acceptance)
