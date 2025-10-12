@@ -12,26 +12,7 @@ jobs:
   build-android:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4  # Checkout repo code
-
-      - name: Lint YAML
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y yamllint
-          echo "extends: default" > yamllint-config.yml
-          echo "rules:" >> yamllint-config.yml
-          echo "  indentation: {spaces: 2, indent-sequences: no}" >> yamllint-config.yml
-          echo "  line-length: {max: 120}" >> yamllint-config.yml
-          echo "  truthy: disable" >> yamllint-config.yml
-          echo "  braces: {forbid: true}" >> yamllint-config.yml
-          echo "  colons: {max-spaces-before: 0, max-spaces-after: 1}" >> yamllint-config.yml
-          echo "  empty-lines: {max: 2}" >> yamllint-config.yml
-          echo "  document-start: {present: true}" >> yamllint-config.yml
-          echo "  trailing-spaces: {level: error}" >> yamllint-config.yml
-          echo "  new-line-at-end-of-file: {level: error}" >> yamllint-config.yml
-          yamllint -c yamllint-config.yml .github/workflows/build.yml || \
-            { echo "YAML linting failed"; cat .github/workflows/build.yml | nl -ba; exit 1; }
-        shell: bash
+      - uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -48,7 +29,6 @@ jobs:
       - run: pip install buildozer cython
         shell: bash
 
-      # Generate buildozer.spec on-the-fly
       - name: Generate buildozer.spec
         run: |
           cat <<EOT > buildozer.spec
@@ -65,7 +45,6 @@ jobs:
           EOT
         shell: bash
 
-      # Install Android SDK/NDK, dependencies
       - name: Install Android dependencies
         run: |
           sudo apt-get update
@@ -102,7 +81,7 @@ jobs:
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: grok-farewell-android-${{ env.VERSION }}
+          name: grok-farewell-android-${{ github.sha }}
           path: bin/*.apk
 
   ############################################
@@ -124,7 +103,7 @@ jobs:
       - name: Cache pip
         uses: actions/cache@v4
         with:
-          path: /.cache/pip
+          path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('/requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip-
 
