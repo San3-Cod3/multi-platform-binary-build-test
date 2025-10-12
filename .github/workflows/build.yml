@@ -71,11 +71,17 @@ jobs:
           cd $ANDROID_SDK_ROOT/cmdline-tools
           curl -L -o cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip -q cmdline-tools.zip
-          mv cmdline-tools latest
-          rm cmdline-tools.zip
-          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
+          # Ensure the correct directory structure for cmdline-tools
+          mv cmdline-tools tools
+          mkdir -p latest
+          mv tools latest/
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/tools/bin:$PATH
 
-          # Pre-create licenses dir
+          # Debug: Verify sdkmanager is available
+          which sdkmanager
+          sdkmanager --version
+
+          # Pre-create licenses directory
           mkdir -p $ANDROID_SDK_ROOT/licenses
 
           # Accept all licenses
@@ -173,7 +179,6 @@ jobs:
         run: Compress-Archive -Path dist* -DestinationPath "grok-farewell-${{ runner.os }}-${{ env.VERSION }}.zip"
         if: runner.os == 'Windows'
         shell: pwsh
-
       - uses: actions/upload-artifact@v4
         with:
           name: grok-farewell-${{ runner.os }}-${{ env.VERSION }}
