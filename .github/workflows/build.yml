@@ -1,3 +1,4 @@
+---
 name: Build Python Binaries
 on: [push, workflow_dispatch]
 
@@ -124,8 +125,7 @@ jobs:
           echo "  document-start: {present: true}" >> yamllint-config.yml
           echo "  trailing-spaces: {level: error}" >> yamllint-config.yml
           echo "  new-line-at-end-of-file: {level: error}" >> yamllint-config.yml
-          yamllint -c yamllint-config.yml .github/workflows/build.yml || \
-            { echo "YAML linting failed"; cat .github/workflows/build.yml | nl -ba; exit 1; }
+          yamllint -c yamllint-config.yml .github/workflows/build.yml || { echo "YAML linting failed"; exit 1; }
         shell: bash
       - uses: actions/setup-python@v5
         with:
