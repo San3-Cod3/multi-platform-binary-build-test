@@ -108,7 +108,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y yamllint
-          yamllint -c <(echo -e "extends: default\nrules:\n  indentation: {spaces: 2, indent-sequences: no}\n  line-length: {max: 120}\n  braces: {forbid: true}\n  colons: {max-spaces-before: 0, max-spaces-after: 1}\n  empty-lines: {max: 2}\n  document-start: {present: true}") .github/workflows/build.yml || echo "YAML linting failed, check output above for details"
+          yamllint -c <(echo -e "extends: default\nrules:\n  indentation: {spaces: 2, indent-sequences: no}\n  line-length: {max: 120}\n  braces: {forbid: true}\n  colons: {max-spaces-before: 0, max-spaces-after: 1}\n  empty-lines: {max: 2}\n  document-start: {present: true}\n  trailing-spaces: {level: error}\n  new-line-at-end-of-file: {level: error}") .github/workflows/build.yml || { echo "YAML linting failed, check output above for details"; cat .github/workflows/build.yml | nl -ba; exit 1; }
         shell: bash
       - uses: actions/setup-python@v5
         with:
