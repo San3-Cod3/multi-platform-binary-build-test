@@ -82,17 +82,25 @@ jobs:
           yes | sdkmanager --licenses || true
           # -----------------------------------------
 
+          # --- New Fix: auto-accept all licenses ---
+          yes | sdkmanager --licenses || true
+          # -----------------------------------------
+
+          # Now safely install required packages
+          sdkmanager --update
+          yes | sdkmanager "platform-tools" "platforms;android-33" "build-tools;36.1.0"
+          # abc
           # Now safely install required packages
           #yes | sdkmanager --update || true
-          sdkmanager --update || true
+          #sdkmanager --update || true
           #yes | sdkmanager "platform-tools" "platforms;android-33" "build-tools;36.1.0" || true
           #yes | sdkmanager --verbose --sdk_root=$ANDROID_SDK_ROOT --licenses "platform-tools" "platforms;android-33" "build-tools;36.1.0" || true
           #yes | sdkmanager "platform-tools" "platforms;android-33" || true
           #yes | sdkmanager "build-tools;36.1.0" || true
           # Install packages separately (so each can succeed individually)
-          sdkmanager "platform-tools" || true
-          sdkmanager "platforms;android-33" || true
-          sdkmanager "build-tools;36.1.0" || true
+          #sdkmanager "platform-tools" || true
+          #sdkmanager "platforms;android-33" || true
+          #sdkmanager "build-tools;36.1.0" || true
         shell: bash
 
       # Download and set up Android NDK
