@@ -85,9 +85,9 @@ jobs:
           # Now safely install required packages
           yes | sdkmanager --update || true
           #yes | sdkmanager "platform-tools" "platforms;android-33" "build-tools;36.1.0" || true
-          yes | sdkmanager --verbose --sdk_root=$ANDROID_SDK_ROOT --licenses "platform-tools" "platforms;android-33" "build-tools;36.1.0" || true
-          #yes | sdkmanager "platform-tools" "platforms;android-33" || true
-          #yes | sdkmanager "build-tools;36.1.0" || true
+          #yes | sdkmanager --verbose --sdk_root=$ANDROID_SDK_ROOT --licenses "platform-tools" "platforms;android-33" "build-tools;36.1.0" || true
+          yes | sdkmanager "platform-tools" "platforms;android-33" || true
+          yes | sdkmanager "build-tools;36.1.0" || true
         shell: bash
 
       # Download and set up Android NDK
