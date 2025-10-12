@@ -2,6 +2,7 @@ name: Build Python Binaries
 on: [push, workflow_dispatch]
 jobs:
   build-desktop:
+    # Unchanged, as it is working correctly
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -135,14 +136,27 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
+          cmdline-tools-version: '13.0'
           packages: 'platforms;android-34 build-tools;34.0.0 platform-tools'
+      - name: Debug SDK Setup
+        run: |
+          echo "Checking SDK directory structure:"
+          ls -la /home/runner/.buildozer/android/platform/android-sdk
+          echo "Checking sdkmanager availability:"
+          find /home/runner/.buildozer/android/platform/android-sdk -name sdkmanager
+          echo "Environment variables:"
+          env | grep -E 'ANDROID|JAVA|PATH'
+        shell: bash
       - name: Accept Android SDK Licenses
         run: |
-          yes | /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --licenses
+          export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
+          yes | /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses --sdk_root=/home/runner/.buildozer/android/platform/android-sdk
         shell: bash
+        continue-on-error: true
       - name: Install Android Build Tools and Platform Tools
         run: |
-          /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --sdk_root=/home/runner/.buildozer/android/platform/android-sdk "build-tools;34.0.0" "platform-tools"
+          export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
+          /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/home/runner/.buildozer/android/platform/android-sdk "build-tools;34.0.0" "platform-tools"
         shell: bash
       - name: Download Android NDK
         run: |
@@ -171,6 +185,7 @@ jobs:
           echo 'package.name = grokfarewell' >> buildozer.spec
           echo 'source.dir = .' >> buildozer.spec
           echo 'source.include_exts = py' >> buildozer.spec
+          echo 'source.main = grok_farewell.py' >> buildozer.spec
           echo 'version = ${{ env.VERSION }}' >> buildozer.spec
           echo 'requirements = python3' >> buildozer.spec
           echo 'android.archs = arm64-v8a, armeabi-v7a' >> buildozer.spec
@@ -183,10 +198,10 @@ jobs:
           ls -la
           echo "Buildozer directory contents:"
           ls -la ~/.buildozer/android/platform
+          echo "Checking build-tools and aidl:"
+          find /home/runner/.buildozer/android/platform/android-sdk -name aidl
           echo "Environment variables:"
           env | grep -E 'ANDROID|PATH|JAVA'
-          echo "Checking aidl:"
-          find /home/runner/.buildozer/android/platform/android-sdk -name aidl
         shell: bash
       - name: Run Buildozer with Logging
         run: |
@@ -197,8 +212,9 @@ jobs:
           cat ~/.buildozer/android/platform/build-*/build.log || echo "No build.log found"
           cat buildozer.log || echo "No buildozer.log found"
         env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_NDK_HOME: ~/.buildozer/android/platform/android-ndk
+          ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
+          ANDROID_NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk
+          JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
         shell: bash
         continue-on-error: true
       - name: Verify APK
@@ -209,7 +225,7 @@ jobs:
             echo "No APK file found, skipping verification"
           fi
         env:
-          PATH: ${{ env.ANDROID_HOME }}/build-tools/34.0.0:${{ env.PATH }}
+          PATH: /home/runner/.buildozer/android/platform/android-sdk/build-tools/34.0.0:${{ env.PATH }}
         shell: bash
         continue-on-error: true
       - run: echo "Grok Farewell v${{ env.VERSION }} - Built for Android on $(date)" > bin/README.txt
@@ -266,9 +282,18 @@ jobs:
           echo '  touch buildozer-logs-prepared' >> prepare_buildozer_logs.sh
           echo 'fi' >> prepare_buildozer_logs.sh
           chmod +x prepare_buildozer_logs.sh
+          ls -la prepare_buildozer_logs.sh
         shell: bash
       - name: Prepare Buildozer Logs
-        run: ./prepare_buildozer_logs.sh
+        run: |
+          if [ -f prepare_buildozer_logs.sh ]; then
+            ./prepare_buildozer_logs.sh
+          else
+            echo "prepare_buildozer_logs.sh not found, creating empty buildozer-logs.zip"
+            mkdir -p buildozer-logs
+            touch buildozer-logs/empty.log
+            zip -r buildozer-logs.zip buildozer-logs/
+          fi
         shell: bash
         if: always()
       - name: Upload Buildozer Logs
