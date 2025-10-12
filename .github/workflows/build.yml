@@ -8,39 +8,25 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-
     steps:
-      # Checkout repository
       - uses: actions/checkout@v4
-
-      # Setup Python
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-
-      # Cache pip for faster builds
       - name: Cache pip
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip-
-
-      # Install dependencies
-      - run: |
-          echo "python3" > requirements.txt
-          pip install pyinstaller
+      - run: echo "python3" > requirements.txt
         shell: bash
-
-      # Create output spec directory
+      - run: pip install pyinstaller
+        shell: bash
       - run: mkdir -p spec
         shell: bash
-
-      # Build executable using PyInstaller
       - run: pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
         shell: bash
-
-      # Run binary (optional test)
       - name: Run Binary
         run: |
           if [ "${{ runner.os }}" == "Windows" ]; then
@@ -49,27 +35,9 @@ jobs:
             ./dist/grok_farewell
           fi
         shell: bash
-        continue-on-error: true
-
-      # Set version
-      - run: echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
-        shell: bash
-
-      # Create README for binary
-      - run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
-        shell: bash
-
-      # Create note for Windows signing
-      - run: |
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            echo "Add code signing for Windows with signtool (requires certificate)" > dist/SIGNING_NOTE.txt
-          fi
-        shell: bash
-
-      # Generate checksum
       - name: Create Checksum
         run: |
-          python - <<EOF
+          python - <<'PYTHON'
 import hashlib
 import os
 
@@ -79,12 +47,10 @@ if os.name == 'nt':
 
 with open(filename, 'rb') as f:
     checksum = hashlib.sha256(f.read()).hexdigest()
-    print(checksum)
-    with open("dist/CHECKSUM.txt", "w") as out:
-        out.write(checksum + "  " + filename + "\n")
-EOF
 
-      # Set OS name for artifact naming
+with open("dist/CHECKSUM.txt", "w") as out:
+    out.write(checksum + "  " + filename + "\n")
+PYTHON
       - name: Set OS Name
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
@@ -95,43 +61,82 @@ EOF
             echo "OS_NAME=windows" >> $GITHUB_ENV
           fi
         shell: bash
-
-      # Zip artifacts
-      - name: Zip Artifact
-        run: |
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            powershell Compress-Archive -Path dist/* -DestinationPath "grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip"
-          else
-            zip -r grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip dist/
-          fi
-
-      # Upload artifact
+      - name: Zip Artifact (Linux/macOS)
+        run: zip -r grok-farewell-${{ env.OS_NAME }}.zip dist/
+        if: runner.os != 'Windows'
+        shell: bash
+      - name: Zip Artifact (Windows)
+        run: Compress-Archive -Path dist* -DestinationPath "grok-farewell-${{ env.OS_NAME }}.zip"
+        if: runner.os == 'Windows'
+        shell: pwsh
       - uses: actions/upload-artifact@v4
         with:
-          name: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}
-          path: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
+          name: grok-farewell-${{ env.OS_NAME }}
+          path: grok-farewell-${{ env.OS_NAME }}.zip
 
-      # Create GitHub release (only once, on Linux runner)
-      - name: Create GitHub Release
-        if: github.event_name == 'workflow_dispatch' && runner.os == 'ubuntu-latest'
-        id: create-release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          tag_name: ${{ env.VERSION }}
-          release_name: Grok Farewell ${{ env.VERSION }}
-          body: |
-            Grok Farewell v${{ env.VERSION }} - Desktop binaries for Linux, macOS, Windows.
-            Includes binaries, README, and CHECKSUM.txt for verification.
-          draft: false
-          prerelease: false
+          python-version: '3.10'
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: android-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: android-pip-
+      - run: echo "python3" > requirements.txt
+        shell: bash
+      - run: pip install buildozer cython
+        shell: bash
+      - name: Initialize Buildozer
+        run: |
+          buildozer init
+          # Create buildozer.spec dynamically
+          echo "[app]" > buildozer.spec
+          echo "title = Grok Farewell" >> buildozer.spec
+          echo "package.name = grokfarewell" >> buildozer.spec
+          echo "source.dir = ." >> buildozer.spec
+          echo "source.include_exts = py" >> buildozer.spec
+          echo "source.main = grok_farewell.py" >> buildozer.spec
+          echo "version = 1.0.0" >> buildozer.spec
+          echo "requirements = python3" >> buildozer.spec
+          echo "android.archs = arm64-v8a, armeabi-v7a" >> buildozer.spec
+          echo "android.api = 34" >> buildozer.spec
+          echo "android.ndk_path = ~/.buildozer/android/platform/android-ndk" >> buildozer.spec
+        shell: bash
+      - name: Install Android dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev \
+            libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev \
+            cython3 unzip coreutils autoconf automake libtool
+        shell: bash
+      - name: Build APK
+        run: |
+          buildozer android debug
+        shell: bash
+      - name: Prepare Android checksum
+        run: |
+          python - <<'PYTHON'
+import hashlib
+import glob
 
-      # Upload release asset
-      - name: Upload Release Asset
-        if: github.event_name == 'workflow_dispatch'
-        uses: softprops/action-gh-release@v1
+apk_files = glob.glob('bin/*.apk')
+if not apk_files:
+    print('No APK found')
+    exit(1)
+apk = apk_files[0]
+
+with open(apk, 'rb') as f:
+    checksum = hashlib.sha256(f.read()).hexdigest()
+
+with open("bin/CHECKSUM.txt", "w") as out:
+    out.write(checksum + "  " + apk + "\n")
+PYTHON
+      - uses: actions/upload-artifact@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
-          tag_name: ${{ env.VERSION }}
+          name: grok-farewell-android
+          path: bin/
