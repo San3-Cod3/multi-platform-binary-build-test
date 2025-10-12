@@ -32,11 +32,11 @@ jobs:
         run: pip install pyinstaller
         shell: bash
 
-      - name: Create Spec Folder
+      - name: Create Spec Directory
         run: mkdir -p spec
         shell: bash
 
-      - name: Build Binary
+      - name: Build Executable
         run: pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
         shell: bash
 
@@ -53,12 +53,14 @@ jobs:
         run: echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
         shell: bash
 
-      - name: Write README
-        run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
+      - name: Create README
+        run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" \
+          > dist/README.txt
         shell: bash
 
       - name: Add Signing Note
-        run: echo "Add code signing for Windows with signtool (requires certificate)" > dist/SIGNING_NOTE.txt
+        run: echo "Add code signing for Windows with signtool (requires certificate)" \
+          > dist/SIGNING_NOTE.txt
         shell: bash
         if: runner.os == 'Windows'
 
@@ -80,7 +82,7 @@ jobs:
           fi
         shell: bash
 
-      - name: Set OS_NAME
+      - name: Set OS Name
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
             echo "OS_NAME=linux" >> $GITHUB_ENV
@@ -97,19 +99,20 @@ jobs:
         shell: bash
 
       - name: Zip Artifact (Windows)
-        run: Compress-Archive -Path dist* -DestinationPath "grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip"
+        run: Compress-Archive -Path dist* -DestinationPath \
+          "grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip"
         if: runner.os == 'Windows'
         shell: pwsh
 
-      - name: Upload Desktop Artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}
           path: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
         id: create-release
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -123,7 +126,7 @@ jobs:
           prerelease: false
         if: github.event_name == 'workflow_dispatch' && runner.os == 'ubuntu-latest'
 
-      - name: Upload Release Asset
+      - name: Upload Desktop Release Asset
         uses: softprops/action-gh-release@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -181,24 +184,28 @@ jobs:
         run: echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
         shell: bash
 
-      - name: Install Buildozer
+      - name: Create Requirements
+        run: echo "python3" > requirements.txt
+        shell: bash
+
+      - name: Install Buildozer and Cython
         run: pip install buildozer cython
         shell: bash
 
       - name: Install Android Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev \
-            libncursesw5-dev build-essential cmake libffi-dev cython3 \
-            unzip coreutils autoconf automake libtool
+          sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev \
+            libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev \
+            cython3 unzip coreutils autoconf automake libtool
         shell: bash
 
       - name: Setup Android SDK
         run: |
           mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
           cd ~/.buildozer/android/platform/android-sdk/cmdline-tools
-          curl -L -o commandlinetools-linux.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          curl -L -o commandlinetools-linux.zip \
+            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip -q commandlinetools-linux.zip
           mv cmdline-tools latest
         shell: bash
@@ -211,15 +218,17 @@ jobs:
         shell: bash
         continue-on-error: true
 
-      - name: Install Build Tools
+      - name: Install Build Tools and Platform Tools
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager \
             --sdk_root=~/.buildozer/android/platform/android-sdk \
-            "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "platform-tools"
         shell: bash
 
-      - name: Download NDK
+      - name: Download Android NDK
         run: |
           mkdir -p ~/.buildozer/android/platform
           cd ~/.buildozer/android/platform
@@ -233,35 +242,6 @@ jobs:
           fi
           unzip -q android-ndk-r25b-linux.zip
           mv android-ndk-r25b android-ndk
-        shell: bash
-
-      - name: Patch libffi Recipe
-        run: |
-          mkdir -p ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi
-          LIBFFI_PATH=~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
-          echo "from pythonforandroid.recipe import CythonRecipe" > $LIBFFI_PATH
-          echo "from pythonforandroid.logger import shprint" >> $LIBFFI_PATH
-          echo "from pythonforandroid.util import current_directory" >> $LIBFFI_PATH
-          echo "import sh" >> $LIBFFI_PATH
-          echo "" >> $LIBFFI_PATH
-          echo "class LibffiRecipe(CythonRecipe):" >> $LIBFFI_PATH
-          echo "    version = '3.4.6'" >> $LIBFFI_PATH
-          echo "    url = 'https://github.com/libffi/libffi/releases/download/v{version}/libffi-{version}.tar.gz'" >> $LIBFFI_PATH
-          echo "    depends = []" >> $LIBFFI_PATH
-          echo "    call_hostpython_via_targetpython = False" >> $LIBFFI_PATH
-          echo "" >> $LIBFFI_PATH
-          echo "    def build_arch(self, arch):" >> $LIBFFI_PATH
-          echo "        env = self.get_recipe_env(arch)" >> $LIBFFI_PATH
-          echo "        with current_directory(self.get_build_dir(arch.arch)):" >> $LIBFFI_PATH
-          echo "            shprint(sh.Command('autoreconf'), '-vif', _env=env)" >> $LIBFFI_PATH
-          echo "            configure = sh.Command('./configure')" >> $LIBFFI_PATH
-          echo "            shprint(configure, '--host=' + arch.command_prefix, '--prefix={}'.format(self.get_build_dir(arch.arch)), '--disable-builddir', '--enable-static', '--disable-docs', _env=env)" >> $LIBFFI_PATH
-          echo "" >> $LIBFFI_PATH
-          echo "recipe = LibffiRecipe()" >> $LIBFFI_PATH
-        shell: bash
-
-      - name: Initialize Buildozer
-        run: buildozer init
         shell: bash
 
       - name: Create buildozer.spec
@@ -284,11 +264,14 @@ jobs:
         shell: bash
 
       - name: Build APK
-        run: buildozer -v android debug
+        run: buildozer android debug
         shell: bash
 
-      - name: Generate Android Checksum
-        run: python checksum.py bin/grokfarewell-0.1-debug.apk > bin/CHECKSUM.txt
+      - name: Generate APK Checksum
+        run: |
+          APK_FILE=$(ls bin/*.apk | head -n 1)
+          python3 -c "import hashlib; f=open('$APK_FILE','rb'); print(hashlib.sha256(f.read()).hexdigest()+'  '+ '$APK_FILE')" \
+            > bin/CHECKSUM.txt
         shell: bash
 
       - name: Zip Android Artifact
