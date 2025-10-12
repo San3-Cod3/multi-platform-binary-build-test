@@ -72,23 +72,21 @@ jobs:
           curl -L -o cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           # Debug: Verify zip file
           ls -la cmdline-tools.zip
+          # Unzip with error handling
           unzip -q cmdline-tools.zip || { echo "Unzip failed"; exit 1; }
           # Debug: Check extracted contents
           ls -la
-          # Move cmdline-tools to latest, accounting for possible structure
-          if [ -d "cmdline-tools" ]; then
-            mv cmdline-tools latest
-          else
-            mkdir -p latest
-            mv * latest/ 2>/dev/null || true
-          fi
+          # Move cmdline-tools to latest
+          rm -rf latest
+          mkdir -p latest
+          mv cmdline-tools/* latest/ 2>/dev/null || mv * latest/ 2>/dev/null || { echo "Failed to move cmdline-tools to latest"; exit 1; }
           # Debug: Check final cmdline-tools structure
           ls -la $ANDROID_SDK_ROOT/cmdline-tools/latest
           # Set PATH to include sdkmanager
           export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
           # Debug: Verify sdkmanager is available
           which sdkmanager || { echo "sdkmanager not found"; exit 1; }
-          sdkmanager --version
+          sdkmanager --version || { echo "sdkmanager version check failed"; exit 1; }
 
           # Pre-create licenses directory
           mkdir -p $ANDROID_SDK_ROOT/licenses
