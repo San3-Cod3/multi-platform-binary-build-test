@@ -25,22 +25,19 @@ jobs:
           mkdir -p dist spec
           pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
 
-      - name: Create Checksum
+      - name: Create Checksum Script
         run: |
-          python - <<PYTHON
-import hashlib
-import os
+          echo "import hashlib, os" > checksum.py
+          echo "filename = './dist/grok_farewell'" >> checksum.py
+          echo "import sys" >> checksum.py
+          echo "if os.name == 'nt': filename += '.exe'" >> checksum.py
+          echo "with open(filename, 'rb') as f:" >> checksum.py
+          echo "    checksum = hashlib.sha256(f.read()).hexdigest()" >> checksum.py
+          echo "with open('dist/CHECKSUM.txt','w') as out:" >> checksum.py
+          echo "    out.write(checksum + '  ' + filename + '\\n')" >> checksum.py
 
-filename = "./dist/grok_farewell"
-if os.name == "nt":
-    filename += ".exe"
-
-with open(filename, "rb") as f:
-    checksum = hashlib.sha256(f.read()).hexdigest()
-
-with open("dist/CHECKSUM.txt", "w") as out:
-    out.write(checksum + "  " + filename + "\n")
-PYTHON
+      - name: Generate Checksum
+        run: python checksum.py
 
       - name: Set OS Name
         run: |
