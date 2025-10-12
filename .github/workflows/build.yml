@@ -83,7 +83,7 @@ jobs:
           # -----------------------------------------
 
           # Now safely install required packages
-          sdkmanager --update
+          yes | sdkmanager --update
           yes | sdkmanager "platform-tools" "platforms;android-33" "build-tools;36.1.0"
         shell: bash
 
