@@ -32,6 +32,13 @@ jobs:
       - run: pip install --upgrade buildozer cython
         shell: bash
 
+      - name: Update libffi recipe
+        run: |
+          RECIPE_PATH="$HOME/.local/lib/python3.10/site-packages/pythonforandroid/recipes/libffi/__init__.py"
+          sed -i 's/version = "3.2.1"/version = "3.4.6"/' $RECIPE_PATH
+          sed -i '/patches = \[/,/^\s*\]/c\patches = []' $RECIPE_PATH
+        shell: bash
+
       # Generate buildozer.spec on-the-fly
       - name: Generate buildozer.spec
         run: |
