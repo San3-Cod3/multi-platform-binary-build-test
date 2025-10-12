@@ -32,13 +32,6 @@ jobs:
       - run: pip install --upgrade buildozer cython
         shell: bash
 
-      - name: Update libffi recipe
-        run: |
-          RECIPE_PATH="$HOME/.local/lib/python3.10/site-packages/pythonforandroid/recipes/libffi/__init__.py"
-          sed -i 's/version = "3.2.1"/version = "3.4.6"/' $RECIPE_PATH
-          sed -i '/patches = \[/,/^\s*\]/c\patches = []' $RECIPE_PATH
-        shell: bash
-
       # Generate buildozer.spec on-the-fly
       - name: Generate buildozer.spec
         run: |
@@ -68,7 +61,7 @@ jobs:
           sudo apt-get install -y \
             openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev \
             libncursesw5-dev build-essential cmake libffi-dev cython3 \
-            unzip autoconf automake libtool libtool-bin pkg-config wget
+            unzip autoconf automake libtool libtool-bin libltdl-dev pkg-config wget
         shell: bash
       
       # Setup Android SDK Command Line Tools (with license acceptance)
@@ -115,6 +108,8 @@ jobs:
       # Build APK
       - name: Build Android APK
         run: |
+          export M4_PATTERN_ALLOW="LT_SYS_SYMBOL_USCORE"
+          export ACLOCAL_PATH=/usr/share/aclocal
           buildozer android debug
         shell: bash
 
