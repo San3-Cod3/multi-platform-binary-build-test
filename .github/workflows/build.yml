@@ -138,8 +138,9 @@ jobs:
           #mv cmdline-tools/* latest/
           #
           mkdir -p latest
-          mv cmdline-tools/* latest/ || true
-          rm -rf cmdline-tools
+          #mv cmdline-tools/* latest/ || true
+          #rm -rf cmdline-tools
+          mv * latest/
 
           # Fix for Buildozer: create symlinks
           mkdir -p $ANDROID_SDK_ROOT/tools
