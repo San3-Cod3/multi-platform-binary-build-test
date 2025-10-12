@@ -68,6 +68,9 @@ jobs:
             ####unzip libtool libtool-bin pkg-config wget
             # four #hash bot tried as guessed same thing; not zip
             #####unzip libtool-bin pkg-config wget
+            # LET'S INSTALL THINGS INSTEAD
+            sudo apt-get update -qq
+            sudo apt-get install -y autoconf automake libtool libtool-bin pkg-config wget
         shell: bash
       
       # Fix libffi autoreconf macro issue (LT_SYS_SYMBOL_USCORE)
