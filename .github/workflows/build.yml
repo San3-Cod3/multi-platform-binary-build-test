@@ -106,8 +106,11 @@ jobs:
           ##########mv cmdline-tools/* latest/ || { echo "Failed to move cmdline-tools/* to latest"; exit 1; }
           #
           # Move extracted cmdline-tools into latest
+          #mkdir -p latest
+          #mv * latest/
+          # Move extracted cmdline-tools into latest (without recursive 'latest' issue)
           mkdir -p latest
-          mv * latest/
+          mv cmdline-tools/* latest/
           #
           # Debug: Check final cmdline-tools structure
           ls -la $ANDROID_SDK_ROOT/cmdline-tools/latest
