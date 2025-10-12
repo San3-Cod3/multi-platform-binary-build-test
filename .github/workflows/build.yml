@@ -74,18 +74,18 @@ jobs:
         shell: bash
       
       # Fix libffi autoreconf macro issue (LT_SYS_SYMBOL_USCORE)
-      - name: Fix libffi autoreconf macro issue
-        run: |
-          echo "Ensuring libtool macros are visible..."
-          export ACLOCAL_PATH=/usr/share/aclocal
-          export M4_PATTERN_ALLOW="LT_SYS_SYMBOL_USCORE"
-          libtoolize --force --copy
-          autoreconf -ivf
-          #libtoolize --version
-          #autoconf --version
-          #automake --version
-          # Last three lines commented out
-        shell: bash
+      #- name: Fix libffi autoreconf macro issue
+      #  run: |
+      #    echo "Ensuring libtool macros are visible..."
+      #    export ACLOCAL_PATH=/usr/share/aclocal
+      #    export M4_PATTERN_ALLOW="LT_SYS_SYMBOL_USCORE"
+      #    libtoolize --force --copy
+      #    autoreconf -ivf
+      #    #libtoolize --version
+      #    #autoconf --version
+      #    #automake --version
+      #    # Last three lines commented out
+      #  shell: bash
       
       # Setup Android SDK Command Line Tools (with license acceptance)
       - name: Setup Android SDK
