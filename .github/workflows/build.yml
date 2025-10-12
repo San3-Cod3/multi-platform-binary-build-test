@@ -103,7 +103,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}
-          path: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip  # Upload built artifact
+          path: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
+        # Upload built artifact
 
       - name: Create GitHub Release
         id: create-release
@@ -224,7 +225,7 @@ jobs:
       - name: Patch libffi Recipe
         run: |
           mkdir -p ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi
-          LIBFFI_PATH=~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
+          LIBFFI_PATH=/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/init.py
           echo "from pythonforandroid.recipe import CythonRecipe" > $LIBFFI_PATH
           echo "from pythonforandroid.logger import shprint" >> $LIBFFI_PATH
           echo "from pythonforandroid.util import current_directory" >> $LIBFFI_PATH
@@ -241,8 +242,8 @@ jobs:
           echo "            shprint(sh.Command('autoreconf'), '-vif', _env=env)" >> $LIBFFI_PATH
           echo "            configure = sh.Command('./configure')" >> $LIBFFI_PATH
           echo "            shprint(configure, '--host=' + arch.command_prefix, \\" >> $LIBFFI_PATH
-          echo "                '--prefix={}'.format(self.get_build_dir(arch.arch)), \\" >> $LIBFFI_PATH
-          echo "                '--disable-builddir', '--enable-static', '--disable-docs', _env=env)" >> $LIBFFI_PATH
+          echo "                '--prefix={}'.format(self.get_build_dir(arch.arch)), '--disable-builddir', \\" >> $LIBFFI_PATH
+          echo "                '--enable-static', '--disable-docs', _env=env)" >> $LIBFFI_PATH
           echo "            shprint(sh.make, _env=env)" >> $LIBFFI_PATH
           echo "" >> $LIBFFI_PATH
           echo "recipe = LibffiRecipe()" >> $LIBFFI_PATH
