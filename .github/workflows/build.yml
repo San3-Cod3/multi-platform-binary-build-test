@@ -236,21 +236,21 @@ jobs:
         shell: bash
       - name: Create buildozer.spec
         run: |
-          echo '[buildozer]' > buildozer.spec
-          echo 'log_level = 2' > buildozer.spec
-          echo 'warn_on_root = 1' >> buildozer.spec
-          echo '' >> buildozer.spec
-          echo '[app]' >> buildozer.spec
-          echo 'title = Grok Farewell' >> buildozer.spec
-          echo 'package.name = grokfarewell' >> buildozer.spec
-          echo 'source.dir = .' >> buildozer.spec
-          echo 'source.include_exts = py' >> buildozer.spec
-          echo 'source.main = grok_farewell.py' >> buildozer.spec
-          echo 'version = ${{ env.VERSION }}' >> buildozer.spec
-          echo 'requirements = python3' >> buildozer.spec
-          echo 'android.archs = arm64-v8a, armeabi-v7a' >> buildozer.spec
-          echo 'android.api = 34' >> buildozer.spec
-          echo 'android.ndk_path = ~/.buildozer/android/platform/android-ndk' >> buildozer.spec
+          echo "[buildozer]" > buildozer.spec
+          echo "log_level = 2" >> buildozer.spec
+          echo "warn_on_root = 1" >> buildozer.spec
+          echo "" >> buildozer.spec
+          echo "[app]" >> buildozer.spec
+          echo "title = Grok Farewell" >> buildozer.spec
+          echo "package.name = grokfarewell" >> buildozer.spec
+          echo "source.dir = ." >> buildozer.spec
+          echo "source.include_exts = py" >> buildozer.spec
+          echo "source.main = grok_farewell.py" >> buildozer.spec
+          echo "version = ${{ env.VERSION }}" >> buildozer.spec
+          echo "requirements = python3" >> buildozer.spec
+          echo "android.archs = arm64-v8a, armeabi-v7a" >> buildozer.spec
+          echo "android.api = 34" >> buildozer.spec
+          echo "android.ndk_path = ~/.buildozer/android/platform/android-ndk" >> buildozer.spec
         shell: bash
       - name: Debug Environment
         run: |
@@ -261,7 +261,7 @@ jobs:
           echo "Checking build-tools and aidl:"
           find /home/runner/.buildozer/android/platform/android-sdk -name aidl
           echo "Environment variables:"
-          env | grep -E 'ANDROID|PATH|JAVA'
+          env | grep -E "ANDROID|PATH|JAVA"
         shell: bash
       - name: Run Buildozer with Logging
         run: |
@@ -333,19 +333,19 @@ jobs:
         continue-on-error: true
       - name: Create Buildozer Log Preparation Script
         run: |
-          echo '#!/bin/bash' > prepare_buildozer_logs.sh
-          echo 'set -e' >> prepare_buildozer_logs.sh
-          echo 'mkdir -p buildozer-logs' >> prepare_buildozer_logs.sh
-          echo 'echo "Preparing Buildozer logs..."' >> prepare_buildozer_logs.sh
-          echo 'find $HOME/.buildozer -type f -name "*.log" -exec cp {} buildozer-logs/ \;' >> prepare_buildozer_logs.sh
-          echo 'if [ -f buildozer.log ]; then cp buildozer.log buildozer-logs/; fi' >> prepare_buildozer_logs.sh
-          echo 'if [ -d buildozer-logs ] && [ "$(ls -A buildozer-logs)" ]; then' >> prepare_buildozer_logs.sh
-          echo '  zip -r buildozer-logs.zip buildozer-logs/' >> prepare_buildozer_logs.sh
-          echo '  touch buildozer-logs-prepared' >> prepare_buildozer_logs.sh
-          echo 'else' >> prepare_buildozer_logs.sh
-          echo '  echo "No build logs found"' >> prepare_buildozer_logs.sh
-          echo '  touch buildozer-logs-prepared' >> prepare_buildozer_logs.sh
-          echo 'fi' >> prepare_buildozer_logs.sh
+          echo "#!/bin/bash" > prepare_buildozer_logs.sh
+          echo "set -e" >> prepare_buildozer_logs.sh
+          echo "mkdir -p buildozer-logs" >> prepare_buildozer_logs.sh
+          echo "echo 'Preparing Buildozer logs...'" >> prepare_buildozer_logs.sh
+          echo "find \$HOME/.buildozer -type f -name '*.log' -exec cp {} buildozer-logs/ \;" >> prepare_buildozer_logs.sh
+          echo "if [ -f buildozer.log ]; then cp buildozer.log buildozer-logs/; fi" >> prepare_buildozer_logs.sh
+          echo "if [ -d buildozer-logs ] && [ \"\$(ls -A buildozer-logs)\" ]; then" >> prepare_buildozer_logs.sh
+          echo "  zip -r buildozer-logs.zip buildozer-logs/" >> prepare_buildozer_logs.sh
+          echo "  touch buildozer-logs-prepared" >> prepare_buildozer_logs.sh
+          echo "else" >> prepare_buildozer_logs.sh
+          echo "  echo 'No build logs found'" >> prepare_buildozer_logs.sh
+          echo "  touch buildozer-logs-prepared" >> prepare_buildozer_logs.sh
+          echo "fi" >> prepare_buildozer_logs.sh
           chmod +x prepare_buildozer_logs.sh
           ls -la prepare_buildozer_logs.sh
         shell: bash
