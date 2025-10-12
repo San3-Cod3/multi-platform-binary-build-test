@@ -125,6 +125,11 @@ jobs:
           yamllint -c yamllint-config.yml .github/workflows/build.yml || \
             { echo "YAML linting failed"; cat .github/workflows/build.yml | nl -ba; exit 1; }
         shell: bash
+      - name: Lint YAML Debug
+        run: |
+          yamllint -c yamllint-config.yml .github/workflows/build.yml -f parsable
+        shell: bash
+        if: failure()
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
@@ -337,7 +342,11 @@ jobs:
           echo "set -e" >> prepare_buildozer_logs.sh
           echo "mkdir -p buildozer-logs" >> prepare_buildozer_logs.sh
           echo "echo 'Preparing Buildozer logs...'" >> prepare_buildozer_logs.sh
-          echo "find \$HOME/.buildozer -type f -name '*.log' -exec cp {} buildozer-logs/ \;" >> prepare_buildozer_logs.sh
+          echo "find \$HOME/.buildozer -type f -name '*.log' -exec cp {} buildozer-logs/ \;" > temp_script.sh
+          echo "cat temp_script.sh >> prepare_buildozer_logs.sh" >> temp_script.sh
+          chmod +x temp_script.sh
+          ./temp_script.sh
+          rm temp_script.sh
           echo "if [ -f buildozer.log ]; then cp buildozer.log buildozer-logs/; fi" >> prepare_buildozer_logs.sh
           echo "if [ -d buildozer-logs ] && [ \"\$(ls -A buildozer-logs)\" ]; then" >> prepare_buildozer_logs.sh
           echo "  zip -r buildozer-logs.zip buildozer-logs/" >> prepare_buildozer_logs.sh
