@@ -1,3 +1,4 @@
+---
 name: Build Python Binaries
 on: [push, workflow_dispatch]
 jobs:
@@ -108,7 +109,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y yamllint
-          yamllint -c <(echo -e "extends: default\nrules:\n  indentation: {spaces: 2, indent-sequences: no}\n  line-length: disable") .github/workflows/build.yml
+          yamllint -c <(echo -e "extends: default\nrules:\n  indentation: {spaces: 2, indent-sequences: no}\n  line-length: {max: 120}\n  truthy: disable\n  braces: {forbid: true}\n  colons: {max-spaces-before: 0, max-spaces-after: 1}\n  empty-lines: {max: 2}\n  document-start: {present: true}\n  trailing-spaces: {level: error}\n  new-line-at-end-of-file: {level: error}") .github/workflows/build.yml || { echo "YAML linting failed, check output above for details"; cat .github/workflows/build.yml | nl -ba; exit 1; }
         shell: bash
       - uses: actions/setup-python@v5
         with:
@@ -199,11 +200,7 @@ jobs:
           echo "        with current_directory(self.get_build_dir(arch.arch)):" >> ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
           echo "            shprint(sh.Command('autoreconf'), '-vif', _env=env)" >> ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
           echo "            configure = sh.Command('./configure')" >> ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
-          echo "            shprint(configure, '--host=' + arch.command_prefix," >> ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
-          echo "                    '--prefix={}'.format(self.get_build_dir(arch.arch))," >> ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
-          echo "                    '--disable-builddir'," >> ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
-          echo "                    '--enable-static'," >> ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
-          echo "                    '--disable-docs', _env=env)" >> ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
+          echo "            shprint(configure, '--host=' + arch.command_prefix, '--prefix={}'.format(self.get_build_dir(arch.arch)), '--disable-builddir', '--enable-static', '--disable-docs', _env=env)" >> ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
           echo "            shprint(sh.make, _env=env)" >> ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
           echo "" >> ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
           echo "recipe = LibffiRecipe()" >> ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
