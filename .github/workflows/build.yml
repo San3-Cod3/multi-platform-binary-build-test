@@ -12,7 +12,7 @@ jobs:
   build-android:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4  # Checkout repo code
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -29,6 +29,7 @@ jobs:
       - run: pip install buildozer cython
         shell: bash
 
+      # Generate buildozer.spec on-the-fly
       - name: Generate buildozer.spec
         run: |
           cat <<EOT > buildozer.spec
@@ -37,6 +38,7 @@ jobs:
           package.name = grokfarewell
           package.domain = org.example
           source.include_exts = py
+          source.dir = .
           version = 0.1
           requirements = python3,kivy
           orientation = portrait
@@ -45,6 +47,7 @@ jobs:
           EOT
         shell: bash
 
+      # Install Android SDK/NDK dependencies
       - name: Install Android dependencies
         run: |
           sudo apt-get update
@@ -81,7 +84,7 @@ jobs:
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: grok-farewell-android-${{ github.sha }}
+          name: grok-farewell-android-${{ env.VERSION }}
           path: bin/*.apk
 
   ############################################
@@ -103,7 +106,7 @@ jobs:
       - name: Cache pip
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pip
+          path: /.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('/requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip-
 
