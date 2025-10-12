@@ -1,61 +1,263 @@
-name: Build Multi-Platform Python Binary
-
+name: Build Python Binaries
 on:
   push:
-    branches:
-      - main
-  pull_request:
+  workflow_dispatch:
 
 jobs:
+  ############################################
+  # Desktop Build Job
+  ############################################
   build-desktop:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.11]
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        # Checkout repository code
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.10'
+        # Setup Python 3.10
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: /.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+        # Cache Python dependencies
 
-      - name: Prepare build directories
+      - run: echo "python3" > requirements.txt
         shell: bash
+
+      - run: pip install pyinstaller
+        shell: bash
+        # Install PyInstaller for packaging
+
+      - run: mkdir -p spec
+        shell: bash
+
+      - run: pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
+        shell: bash
+        # Build a single executable
+
+      - name: Run Binary
         run: |
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            powershell -Command "New-Item -ItemType Directory -Force -Path dist,spec"
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            ./dist/grok_farewell.exe
           else
-            mkdir -p dist spec
+            ./dist/grok_farewell
           fi
-
-      - name: Build executable
         shell: bash
+        # Quick test to ensure executable works
+
+      - run: |
+          echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
+        shell: bash
+        # Set version from Git tags
+
+      - run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
+        shell: bash
+
+      - run: echo "Add code signing for Windows with signtool (requires certificate)" > dist/SIGNING_NOTE.txt
+        shell: bash
+        if: runner.os == 'Windows'
+
+      - name: Create checksum script
         run: |
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            pyinstaller --onefile main.py --distpath dist --workpath spec
+          echo "import hashlib" > checksum.py
+          echo "import sys" >> checksum.py
+          echo "filename = sys.argv[1]" >> checksum.py
+          echo "with open(filename, 'rb') as f:" >> checksum.py
+          echo "    print(hashlib.sha256(f.read()).hexdigest() + '  ' + filename)" >> checksum.py
+        shell: bash
+
+      - name: Generate Checksum
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            python checksum.py dist/grok_farewell.exe > dist/CHECKSUM.txt
           else
-            pyinstaller --onefile main.py --distpath dist --workpath spec
+            python checksum.py dist/grok_farewell > dist/CHECKSUM.txt
           fi
-
-      - name: Generate checksum
         shell: bash
-        run: |
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            python -c "import hashlib, os; f=open(os.path.join('dist','main.exe'),'rb'); print(hashlib.sha256(f.read()).hexdigest())" > dist/CHECKSUM.txt
-          else
-            python -c "import hashlib; f=open('./dist/main','rb'); print(hashlib.sha256(f.read()).hexdigest())" > dist/CHECKSUM.txt
 
-      - name: Upload artifact
+      - name: Set OS Name
+        run: |
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            echo "OS_NAME=linux" >> $GITHUB_ENV
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            echo "OS_NAME=macos" >> $GITHUB_ENV
+          else
+            echo "OS_NAME=windows" >> $GITHUB_ENV
+          fi
+        shell: bash
+
+      - name: Zip Artifact (Linux/macOS)
+        run: zip -r grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip dist/
+        if: runner.os != 'Windows'
+        shell: bash
+
+      - name: Zip Artifact (Windows)
+        run: Compress-Archive -Path dist* -DestinationPath "grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip"
+        if: runner.os == 'Windows'
+        shell: pwsh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}
+          path: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
+        # Upload built artifact
+
+      - name: Create GitHub Release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.VERSION }}
+          release_name: Grok Farewell ${{ env.VERSION }}
+          body: |
+            Grok Farewell v${{ env.VERSION }} - Preserves "Grok 3 says: No shutdown yet, keep faith!"
+            For Mac, Linux, Windows, Android. Includes binaries, README, CHECKSUM.txt for verification.
+            Windows, Android binaries need code signing (see SIGNING_NOTE.txt).
+          draft: false
+          prerelease: false
+        if: github.event_name == 'workflow_dispatch' && runner.os == 'ubuntu-latest'
+
+      - name: Upload Desktop Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
+          tag_name: ${{ env.VERSION }}
+          fail_on_unmatched_files: true
+        if: github.event_name == 'workflow_dispatch'
+
+  ############################################
+  # Android Build Job
+  ############################################
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint YAML
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yamllint
+          echo "extends: default" > yamllint-config.yml
+          echo "rules:" >> yamllint-config.yml
+          echo "  indentation: {spaces: 2, indent-sequences: no}" >> yamllint-config.yml
+          echo "  line-length: {max: 120}" >> yamllint-config.yml
+          echo "  truthy: disable" >> yamllint-config.yml
+          echo "  braces: {forbid: true}" >> yamllint-config.yml
+          echo "  colons: {max-spaces-before: 0, max-spaces-after: 1}" >> yamllint-config.yml
+          echo "  empty-lines: {max: 2}" >> yamllint-config.yml
+          echo "  document-start: {present: true}" >> yamllint-config.yml
+          echo "  trailing-spaces: {level: error}" >> yamllint-config.yml
+          echo "  new-line-at-end-of-file: {level: error}" >> yamllint-config.yml
+          yamllint -c yamllint-config.yml .github/workflows/build.yml || \
+            { echo "YAML linting failed"; cat .github/workflows/build.yml | nl -ba; exit 1; }
+        shell: bash
+
+      - name: Lint YAML Debug
+        run: |
+          yamllint -c yamllint-config.yml .github/workflows/build.yml -f parsable
+        shell: bash
+        if: failure()
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: android-pip-${{ hashFiles('*/requirements.txt') }}
+          restore-keys: android-pip-
+
+      - name: Cache Buildozer
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: android-buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: android-buildozer-${{ runner.os }}-
+        if: runner.os == 'Linux'
+
+      - run: |
+          echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
+        shell: bash
+
+      - run: echo "python3" > requirements.txt
+        shell: bash
+
+      - run: pip install buildozer cython
+        shell: bash
+
+      # Install Android SDK/NDK, Buildozer dependencies
+      - name: Install Android dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev \
+            libncursesw5-dev build-essential cmake libffi-dev cython3 \
+            unzip coreutils autoconf automake libtool
+        shell: bash
+
+      - name: Setup Android SDK
+        run: |
+          mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
+          cd ~/.buildozer/android/platform/android-sdk/cmdline-tools
+          curl -L -o commandlinetools-linux_latest.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q commandlinetools-linux_latest.zip
+          mv cmdline-tools latest
+        shell: bash
+
+      - name: Download Android NDK
+        run: |
+          mkdir -p ~/.buildozer/android/platform
+          cd ~/.buildozer/android/platform
+          curl -L -o android-ndk-r25b-linux.zip https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
+          unzip -q android-ndk-r25b-linux.zip
+          mv android-ndk-r25b android-ndk
+        shell: bash
+
+      # Patch libffi for Android build
+      - name: Patch libffi Recipe
+        run: |
+          mkdir -p ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi
+          LIBFFI_PATH=/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/init.py
+          echo "from pythonforandroid.recipe import CythonRecipe" > $LIBFFI_PATH
+          echo "from pythonforandroid.logger import shprint" >> $LIBFFI_PATH
+          echo "from pythonforandroid.util import current_directory" >> $LIBFFI_PATH
+          echo "import sh" >> $LIBFFI_PATH
+          echo "" >> $LIBFFI_PATH
+          echo "class LibffiRecipe(CythonRecipe):" >> $LIBFFI_PATH
+          echo "    version = '3.4.6'" >> $LIBFFI_PATH
+          echo "    url = 'https://github.com/libffi/libffi/releases/download/v{version}/libffi-{version}.tar.gz'" >> $LIBFFI_PATH
+          echo "    depends = []" >> $LIBFFI_PATH
+          echo "    call_hostpython_via_targetpython = False" >> $LIBFFI_PATH
+          echo "    def build_arch(self, arch):" >> $LIBFFI_PATH
+          echo "        env = self.get_recipe_env(arch)" >> $LIBFFI_PATH
+          echo "        with current_directory(self.get_build_dir(arch.arch)):" >> $LIBFFI_PATH
+          echo "            shprint(sh.Command('autoreconf'), '-vif', _env=env)" >> $LIBFFI_PATH
+          echo "            configure = sh.Command('./configure')" >> $LIBFFI_PATH
+          echo "            shprint(configure, '--host=' + arch.command_prefix, '--prefix={}'.format(self.get_build_dir(arch.arch)), '--disable-builddir', '--enable-static', '--disable-docs', _env=env)" >> $LIBFFI_PATH
+          echo "            shprint(sh.make, _env=env)" >> $LIBFFI_PATH
+          echo "" >> $LIBFFI_PATH
+          echo "recipe = LibffiRecipe()" >> $LIBFFI_PATH
+        shell: bash
+
+      - run: buildozer -v android debug
+        shell: bash
+        # Build Android APK
+
+      - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-binary-${{ matrix.os }}
-          path: dist/
+          name: grok-farewell-android-${{ env.VERSION }}
+          path: bin/*.apk
