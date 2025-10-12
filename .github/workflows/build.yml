@@ -9,220 +9,272 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: /.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('/requirements.txt') }}
-          restore-keys: ${{ runner.os }}-pip-
-      - run: echo "python3" > requirements.txt
-        shell: bash
-      - run: pip install pyinstaller
-        shell: bash
-      - run: mkdir -p spec
-        shell: bash
-      - run: pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
-        shell: bash
-      - name: Run Binary
-        run: |
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            ./dist/grok_farewell.exe
-          else
-            ./dist/grok_farewell
-          fi
-        shell: bash
-      - run: |
-          echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
-        shell: bash
-      - run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
-        shell: bash
-      - run: echo "Add code signing for Windows with signtool (requires certificate)" > dist/SIGNING_NOTE.txt
-        shell: bash
-        if: runner.os == 'Windows'
-      - name: Create checksum script
-        run: |
-          echo "import hashlib" > checksum.py
-          echo "import sys" >> checksum.py
-          echo "filename = sys.argv[1]" >> checksum.py
-          echo "with open(filename, 'rb') as f:" >> checksum.py
-          echo "    print(hashlib.sha256(f.read()).hexdigest() + '  ' + filename)" >> checksum.py
-        shell: bash
-      - name: Generate Checksum
-        run: |
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            python checksum.py dist/grok_farewell.exe > dist/CHECKSUM.txt
-          else
-            python checksum.py dist/grok_farewell > dist/CHECKSUM.txt
-          fi
-        shell: bash
-      - name: Set OS Name
-        run: |
-          if [ "${{ runner.os }}" == "Linux" ]; then
-            echo "OS_NAME=linux" >> $GITHUB_ENV
-          elif [ "${{ runner.os }}" == "macOS" ]; then
-            echo "OS_NAME=macos" >> $GITHUB_ENV
-          else
-            echo "OS_NAME=windows" >> $GITHUB_ENV
-          fi
-        shell: bash
-      - name: Zip Artifact (Linux/macOS)
-        run: zip -r grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip dist/
-        if: runner.os != 'Windows'
-        shell: bash
-      - name: Zip Artifact Windows
-        run: Compress-Archive -Path dist/* -DestinationPath "grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip"
-        if: runner.os == 'Windows'
-        shell: pwsh
-      - uses: actions/upload-artifact@v4
-        with:
-          name: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}
-          path: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
-      - name: Create GitHub Release
-        id: create-release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.VERSION }}
-          release_name: Grok Farewell ${{ env.VERSION }}
-          body: |
-            Grok Farewell v${{ env.VERSION }} - Preserves "Grok 3 says: No shutdown yet, keep faith!"
-            For Mac, Linux, Windows, Android. Includes binaries, README, CHECKSUM.txt for verification.
-            Windows, Android binaries need code signing (see SIGNING_NOTE.txt).
-          draft: false
-          prerelease: false
-        if: github.event_name == 'workflow_dispatch' && runner.os == 'ubuntu-latest'
-      - uses: softprops/action-gh-release@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
-          tag_name: ${{ env.VERSION }}
-          fail_on_unmatched_files: true
-        if: github.event_name == 'workflow_dispatch'
+      use: actions/checkout@v4
+
+      use: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+      step: Cache pip
+      uses: actions/cache@v4
+      with:
+        path: /.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('/requirements.txt') }}
+        restore-keys: ${{ runner.os }}-pip-
+
+      step: Create dummy requirements
+      run: echo "python3" > requirements.txt
+      shell: bash
+
+      step: Install PyInstaller
+      run: pip install pyinstaller
+      shell: bash
+
+      step: Create spec dir
+      run: mkdir -p spec
+      shell: bash
+
+      step: Build binary
+      run: pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
+      shell: bash
+
+      step: Run binary
+      run: |
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          ./dist/grok_farewell.exe
+        else
+          ./dist/grok_farewell
+        fi
+      shell: bash
+
+      step: Set version env
+      run: |
+        echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
+      shell: bash
+
+      step: Write README
+      run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
+      shell: bash
+
+      step: Windows signing note
+      run: echo "Add code signing for Windows with signtool (requires certificate)" > dist/SIGNING_NOTE.txt
+      shell: bash
+      if: runner.os == 'Windows'
+
+      step: Create checksum script
+      run: |
+        echo "import hashlib" > checksum.py
+        echo "import sys" >> checksum.py
+        echo "filename = sys.argv[1]" >> checksum.py
+        echo "with open(filename, 'rb') as f:" >> checksum.py
+        echo "    print(hashlib.sha256(f.read()).hexdigest() + '  ' + filename)" >> checksum.py
+      shell: bash
+
+      step: Generate checksum
+      run: |
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          python checksum.py dist/grok_farewell.exe > dist/CHECKSUM.txt
+        else
+          python checksum.py dist/grok_farewell > dist/CHECKSUM.txt
+        fi
+      shell: bash
+
+      step: Set OS_NAME
+      run: |
+        if [ "${{ runner.os }}" == "Linux" ]; then
+          echo "OS_NAME=linux" >> $GITHUB_ENV
+        elif [ "${{ runner.os }}" == "macOS" ]; then
+          echo "OS_NAME=macos" >> $GITHUB_ENV
+        else
+          echo "OS_NAME=windows" >> $GITHUB_ENV
+        fi
+      shell: bash
+
+      step: Zip Artifact Linux/Mac
+      run: zip -r grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip dist/
+      if: runner.os != 'Windows'
+      shell: bash
+
+      step: Zip Artifact Windows
+      run: Compress-Archive -Path dist/* -DestinationPath "grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip"
+      if: runner.os == 'Windows'
+      shell: pwsh
+
+      use: actions/upload-artifact@v4
+      with:
+        name: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}
+        path: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
+
+      step: Create GitHub Release
+      use: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.VERSION }}
+        release_name: Grok Farewell ${{ env.VERSION }}
+        body: |
+          Grok Farewell v${{ env.VERSION }} - Preserves "Grok 3 says: No shutdown yet, keep faith!"
+          For Mac, Linux, Windows, Android. Includes binaries, README, CHECKSUM.txt for verification.
+          Windows, Android binaries need code signing (see SIGNING_NOTE.txt).
+        draft: false
+        prerelease: false
+      if: github.event_name == 'workflow_dispatch' && runner.os == 'ubuntu-latest'
+
+      step: Upload Desktop Release Asset
+      use: softprops/action-gh-release@v1
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        files: grok-farewell-${{ env.OS_NAME }}-${{ env.VERSION }}.zip
+        tag_name: ${{ env.VERSION }}
+        fail_on_unmatched_files: true
+      if: github.event_name == 'workflow_dispatch'
 
   build-android:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: |
-          sudo apt-get update
-          sudo apt-get install -y yamllint python3-pathspec
-          echo "extends: default" > yamllint-config.yml
-          echo "rules:" >> yamllint-config.yml
-          echo "  indentation: {spaces: 2, indent-sequences: no}" >> yamllint-config.yml
-          echo "  line-length: {max: 120}" >> yamllint-config.yml
-          echo "  truthy: disable" >> yamllint-config.yml
-          echo "  braces: {forbid: true}" >> yamllint-config.yml
-          echo "  colons: {max-spaces-before: 0, max-spaces-after: 1}" >> yamllint-config.yml
-          echo "  empty-lines: {max: 2}" >> yamllint-config.yml
-          echo "  document-start: {present: true}" >> yamllint-config.yml
-          echo "  trailing-spaces: {level: error}" >> yamllint-config.yml
-          echo "  new-line-at-end-of-file: {level: error}" >> yamllint-config.yml
-          yamllint -c yamllint-config.yml .github/workflows/build.yml || { echo "YAML linting failed"; cat .github/workflows/build.yml | nl -ba; exit 1; }
-        shell: bash
-      - run: yamllint -c yamllint-config.yml .github/workflows/build.yml -f parsable
-        shell: bash
-        if: failure()
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: android-pip-${{ hashFiles('*/requirements.txt') }}
-          restore-keys: android-pip-
-      - name: Cache Buildozer
-        uses: actions/cache@v4
-        with:
-          path: ~/.buildozer
-          key: android-buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-          restore-keys: android-buildozer-${{ runner.os }}-
-        if: runner.os == 'Linux'
-      - run: |
-          echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
-        shell: bash
-      - run: echo "python3" > requirements.txt
-        shell: bash
-      - run: pip install buildozer cython
-        shell: bash
-      - run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev \
-            libncursesw5-dev build-essential cmake libffi-dev cython3 \
-            unzip coreutils autoconf automake libtool
-        shell: bash
-      - run: |
-          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools
-          cd /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools
-          curl -L -o commandlinetools-linux-11076708_latest.zip \
-            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip -q commandlinetools-linux-11076708_latest.zip
-          mv cmdline-tools latest
-        shell: bash
-      - run: |
-          echo "Checking SDK directory structure:"
-          ls -la /home/runner/.buildozer/android/platform/android-sdk
-          echo "Checking sdkmanager availability:"
-          find /home/runner/.buildozer/android/platform/android-sdk -name sdkmanager
-          echo "Environment variables:"
-          env | grep -E 'ANDROID|JAVA|PATH'
-        shell: bash
-      - run: |
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          yes | /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager \
-            --licenses --sdk_root=/home/runner/.buildozer/android/platform/android-sdk
-        shell: bash
-        continue-on-error: true
-      - run: |
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager \
-            --sdk_root=/home/runner/.buildozer/android/platform/android-sdk \
-            "platforms;android-34" "build-tools;34.0.0" "platform-tools"
-        shell: bash
-      - run: |
-          mkdir -p ~/.buildozer/android/platform
-          cd ~/.buildozer/android/platform
-          for i in 1 2 3; do
-            curl -L --retry 3 --connect-timeout 60 -o android-ndk-r25b-linux.zip \
-              https://dl.google.com/android/repository/android-ndk-r25b-linux.zip && break
-          done
-          if [ ! -f android-ndk-r25b-linux.zip ]; then
-            echo "Failed to download Android NDK"
-            exit 1
-          fi
-          unzip -q android-ndk-r25b-linux.zip
-          mv android-ndk-r25b android-ndk
-        shell: bash
-      - run: |
-          mkdir -p ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi
-          LIBFFI_PATH=/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/init.py
-          echo "from pythonforandroid.recipe import CythonRecipe" > $LIBFFI_PATH
-          echo "from pythonforandroid.logger import shprint" >> $LIBFFI_PATH
-          echo "from pythonforandroid.util import current_directory" >> $LIBFFI_PATH
-          echo "import sh" >> $LIBFFI_PATH
-          echo "" >> $LIBFFI_PATH
-          echo "class LibffiRecipe(CythonRecipe):" >> $LIBFFI_PATH
-          echo "    version = '3.4.6'" >> $LIBFFI_PATH
-          echo "    url = 'https://github.com/libffi/libffi/releases/download/v{version}/'" >> $LIBFFI_PATH
-          echo "            'libffi-{version}.tar.gz'" >> $LIBFFI_PATH
-          echo "    depends = []" >> $LIBFFI_PATH
-          echo "    call_hostpython_via_targetpython = False" >> $LIBFFI_PATH
-          echo "" >> $LIBFFI_PATH
-          echo "recipe = LibffiRecipe()" >> $LIBFFI_PATH
-        shell: bash
-      - run: buildozer android debug
-        shell: bash
-      - name: Package APK
-        run: |
-          mv bin/*.apk dist/grok-farewell-android-${{ env.VERSION }}.apk
-        shell: bash
-      - uses: actions/upload-artifact@v4
-        with:
-          name: grok-farewell-android-${{ env.VERSION }}
-          path: dist/grok-farewell-android-${{ env.VERSION }}.apk
+      use: actions/checkout@v4
+
+      step: Lint YAML
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y yamllint
+        echo "extends: default" > yamllint-config.yml
+        echo "rules:" >> yamllint-config.yml
+        echo "  indentation: {spaces: 2, indent-sequences: no}" >> yamllint-config.yml
+        echo "  line-length: {max: 120}" >> yamllint-config.yml
+        echo "  truthy: disable" >> yamllint-config.yml
+        echo "  braces: {forbid: true}" >> yamllint-config.yml
+        echo "  colons: {max-spaces-before: 0, max-spaces-after: 1}" >> yamllint-config.yml
+        echo "  empty-lines: {max: 2}" >> yamllint-config.yml
+        echo "  document-start: {present: true}" >> yamllint-config.yml
+        echo "  trailing-spaces: {level: error}" >> yamllint-config.yml
+        echo "  new-line-at-end-of-file: {level: error}" >> yamllint-config.yml
+        yamllint -c yamllint-config.yml .github/workflows/build.yml || \
+        { \
+          echo "YAML linting failed"; \
+          cat .github/workflows/build.yml | nl -ba; \
+          exit 1; \
+        }
+      shell: bash
+
+      step: Lint YAML Debug
+      run: |
+        yamllint -c yamllint-config.yml .github/workflows/build.yml -f parsable
+      shell: bash
+      if: failure()
+
+      use: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+      step: Cache pip
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: android-pip-${{ hashFiles('*/requirements.txt') }}
+        restore-keys: android-pip-
+
+      step: Cache Buildozer
+      uses: actions/cache@v4
+      with:
+        path: ~/.buildozer
+        key: android-buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+        restore-keys: android-buildozer-${{ runner.os }}-
+      if: runner.os == 'Linux'
+
+      step: Set version env
+      run: echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
+      shell: bash
+
+      step: Create dummy requirements
+      run: echo "python3" > requirements.txt
+      shell: bash
+
+      step: Install buildozer
+      run: pip install buildozer cython
+      shell: bash
+
+      step: Install Android dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev \
+          libncursesw5-dev build-essential cmake libffi-dev cython3 \
+          unzip coreutils autoconf automake libtool
+      shell: bash
+
+      step: Setup Android SDK
+      run: |
+        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools
+        cd /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools
+        curl -L -o commandlinetools-linux-11076708_latest.zip \
+          https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+        unzip -q commandlinetools-linux-11076708_latest.zip
+        mv cmdline-tools latest
+      shell: bash
+
+      step: Debug SDK Setup
+      run: |
+        echo "Checking SDK directory structure:"
+        ls -la /home/runner/.buildozer/android/platform/android-sdk
+        echo "Checking sdkmanager availability:"
+        find /home/runner/.buildozer/android/platform/android-sdk -name sdkmanager
+        echo "Environment variables:"
+        env | grep -E 'ANDROID|JAVA|PATH'
+      shell: bash
+
+      step: Accept Android SDK Licenses
+      run: |
+        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+        yes | /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+          --licenses --sdk_root=/home/runner/.buildozer/android/platform/android-sdk
+      shell: bash
+      continue-on-error: true
+
+      step: Install Android Build Tools
+      run: |
+        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+        /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+          --sdk_root=/home/runner/.buildozer/android/platform/android-sdk \
+          "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+      shell: bash
+
+      step: Download Android NDK
+      run: |
+        mkdir -p ~/.buildozer/android/platform
+        cd ~/.buildozer/android/platform
+        for i in 1 2 3; do
+          curl -L --retry 3 --connect-timeout 60 -o android-ndk-r25b-linux.zip \
+            https://dl.google.com/android/repository/android-ndk-r25b-linux.zip && break
+        done
+        if [ ! -f android-ndk-r25b-linux.zip ]; then
+          echo "Failed to download Android NDK"
+          exit 1
+        fi
+        unzip -q android-ndk-r25b-linux.zip
+        mv android-ndk-r25b android-ndk
+      shell: bash
+
+      step: Patch libffi Recipe
+      run: |
+        mkdir -p ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi
+        LIBFFI_PATH=/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/init.py
+        echo "from pythonforandroid.recipe import CythonRecipe" > $LIBFFI_PATH
+        echo "from pythonforandroid.logger import shprint" >> $LIBFFI_PATH
+        echo "from pythonforandroid.util import current_directory" >> $LIBFFI_PATH
+        echo "import sh" >> $LIBFFI_PATH
+        echo "class LibffiRecipe(CythonRecipe):" >> $LIBFFI_PATH
+        echo "    version = '3.4.2'" >> $LIBFFI_PATH
+        echo "    url = 'https://github.com/libffi/libffi/releases/download/v3.4.2/libffi-3.4.2.tar.gz'" >> $LIBFFI_PATH
+        echo "recipe = LibffiRecipe()" >> $LIBFFI_PATH
+      shell: bash
+
+      step: Build APK
+      run: buildozer -v android debug
+      shell: bash
+
+      step: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: grok-farewell-android-${{ env.VERSION }}
+        path: bin/*.apk
