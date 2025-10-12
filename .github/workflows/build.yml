@@ -65,7 +65,7 @@ PYTHON
       - name: Zip Artifact
         run: |
           if [ "${{ runner.os }}" == "Windows" ]; then
-            powershell Compress-Archive -Path dist/* -DestinationPath "grok-farewell-${{ env.OS_NAME }}.zip"
+            powershell -Command "Compress-Archive -Path dist/* -DestinationPath 'grok-farewell-${{ env.OS_NAME }}.zip'"
           else
             zip -r "grok-farewell-${{ env.OS_NAME }}.zip" dist/
           fi
