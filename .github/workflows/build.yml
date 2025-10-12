@@ -110,8 +110,14 @@ jobs:
           #mkdir -p latest
           #mv * latest/
           # Move extracted cmdline-tools into latest (without recursive 'latest' issue)
-          mkdir -p latest
-          mv cmdline-tools/* latest/
+          #mkdir -p latest
+          #mv cmdline-tools/* latest/
+          #
+          #
+          #mkdir -p latest
+          #mv cmdline-tools/* latest/ || true
+          #rm -rf cmdline-tools
+          #
           #
           # Debug: Check final cmdline-tools structure
           ls -la $ANDROID_SDK_ROOT/cmdline-tools/latest
@@ -127,12 +133,21 @@ jobs:
           #
           
           # Move extracted cmdline-tools into latest folder
-          rm -rf latest
+          #rm -rf latest
+          #mkdir -p latest
+          #mv cmdline-tools/* latest/
+          #
           mkdir -p latest
-          mv cmdline-tools/* latest/
+          mv cmdline-tools/* latest/ || true
+          rm -rf cmdline-tools
 
           # Fix for Buildozer: create symlinks
           mkdir -p $ANDROID_SDK_ROOT/tools
+          #
+          #
+          mkdir -p $ANDROID_SDK_ROOT/tools/bin
+          #
+          #
           ln -s $ANDROID_SDK_ROOT/cmdline-tools/latest $ANDROID_SDK_ROOT/tools/cmdline-tools
           ln -s $ANDROID_SDK_ROOT/tools/cmdline-tools/bin/sdkmanager $ANDROID_SDK_ROOT/tools/bin/sdkmanager
 
