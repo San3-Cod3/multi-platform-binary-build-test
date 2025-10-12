@@ -76,10 +76,20 @@ jobs:
           unzip -q cmdline-tools.zip || { echo "Unzip failed"; exit 1; }
           # Debug: Check extracted contents
           ls -la
+          # Debug: Check contents of cmdline-tools directory
+          if [ -d "cmdline-tools" ]; then
+            ls -la cmdline-tools
+          else
+            echo "cmdline-tools directory not found"
+          fi
           # Move cmdline-tools to latest
           rm -rf latest
           mkdir -p latest
-          mv cmdline-tools/* latest/ 2>/dev/null || mv * latest/ 2>/dev/null || { echo "Failed to move cmdline-tools to latest"; exit 1; }
+          if [ -d "cmdline-tools" ]; then
+            mv cmdline-tools/* latest/ || { echo "Failed to move cmdline-tools/* to latest"; exit 1; }
+          else
+            mv * latest/ 2>/dev/null || { echo "Failed to move contents to latest"; exit 1; }
+          fi
           # Debug: Check final cmdline-tools structure
           ls -la $ANDROID_SDK_ROOT/cmdline-tools/latest
           # Set PATH to include sdkmanager
