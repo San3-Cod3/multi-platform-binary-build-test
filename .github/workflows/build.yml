@@ -1,6 +1,7 @@
 ---
 name: Build Python Binaries
 on: [push, workflow_dispatch]
+
 jobs:
   build-desktop:
     runs-on: ${{ matrix.os }}
@@ -103,6 +104,7 @@ jobs:
           tag_name: ${{ env.VERSION }}
           fail_on_unmatched_files: true
         if: github.event_name == 'workflow_dispatch'
+
   build-android:
     runs-on: ubuntu-latest
     steps:
@@ -122,12 +124,14 @@ jobs:
           echo "  document-start: {present: true}" >> yamllint-config.yml
           echo "  trailing-spaces: {level: error}" >> yamllint-config.yml
           echo "  new-line-at-end-of-file: {level: error}" >> yamllint-config.yml
-          yamllint -c yamllint-config.yml .github/workflows/build.yml || 
-            { echo "YAML linting failed"; cat .github/workflows/build.yml | nl -ba; exit 1; }
+          yamllint -c yamllint-config.yml .github/workflows/build.yml || {
+            echo "YAML linting failed"
+            cat .github/workflows/build.yml | nl -ba
+            exit 1
+          }
         shell: bash
       - name: Lint YAML Debug
-        run: |
-          yamllint -c yamllint-config.yml .github/workflows/build.yml -f parsable
+        run: yamllint -c yamllint-config.yml .github/workflows/build.yml -f parsable
         shell: bash
         if: failure()
       - uses: actions/setup-python@v5
@@ -146,8 +150,7 @@ jobs:
           key: android-buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: android-buildozer-${{ runner.os }}-
         if: runner.os == 'Linux'
-      - run: |
-          echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
+      - run: echo "VERSION=$(git describe --tags --always || echo 'v1.0.0')" >> $GITHUB_ENV
         shell: bash
       - run: echo "python3" > requirements.txt
         shell: bash
@@ -156,16 +159,16 @@ jobs:
       - name: Install Android dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y 
-            openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev 
-            libncursesw5-dev build-essential cmake libffi-dev cython3 
+          sudo apt-get install -y \
+            openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev \
+            libncursesw5-dev build-essential cmake libffi-dev cython3 \
             unzip coreutils autoconf automake libtool
         shell: bash
       - name: Setup Android SDK
         run: |
           mkdir -p /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools
           cd /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools
-          curl -L -o commandlinetools-linux-11076708_latest.zip 
+          curl -L -o commandlinetools-linux-11076708_latest.zip \
             https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip -q commandlinetools-linux-11076708_latest.zip
           mv cmdline-tools latest
@@ -182,15 +185,15 @@ jobs:
       - name: Accept Android SDK Licenses
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          yes | /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager 
+          yes | /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager \
             --licenses --sdk_root=/home/runner/.buildozer/android/platform/android-sdk
         shell: bash
         continue-on-error: true
       - name: Install Android Build Tools and Platform Tools
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager 
-            --sdk_root=/home/runner/.buildozer/android/platform/android-sdk 
+          /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+            --sdk_root=/home/runner/.buildozer/android/platform/android-sdk \
             "platforms;android-34" "build-tools;34.0.0" "platform-tools"
         shell: bash
       - name: Download Android NDK
@@ -198,7 +201,7 @@ jobs:
           mkdir -p ~/.buildozer/android/platform
           cd ~/.buildozer/android/platform
           for i in 1 2 3; do
-            curl -L --retry 3 --connect-timeout 60 -o android-ndk-r25b-linux.zip 
+            curl -L --retry 3 --connect-timeout 60 -o android-ndk-r25b-linux.zip \
               https://dl.google.com/android/repository/android-ndk-r25b-linux.zip && break
           done
           if [ ! -f android-ndk-r25b-linux.zip ]; then
@@ -229,9 +232,9 @@ jobs:
           echo "        with current_directory(self.get_build_dir(arch.arch)):" >> $LIBFFI_PATH
           echo "            shprint(sh.Command('autoreconf'), '-vif', _env=env)" >> $LIBFFI_PATH
           echo "            configure = sh.Command('./configure')" >> $LIBFFI_PATH
-          echo "            shprint(configure, '--host=' + arch.command_prefix, \" >> $LIBFFI_PATH
-          echo "                    '--prefix={}'.format(self.get_build_dir(arch.arch)), \" >> $LIBFFI_PATH
-          echo "                    '--disable-builddir', '--enable-static', \" >> $LIBFFI_PATH
+          echo "            shprint(configure, '--host=' + arch.command_prefix, " >> $LIBFFI_PATH
+          echo "                    '--prefix={}'.format(self.get_build_dir(arch.arch)), " >> $LIBFFI_PATH
+          echo "                    '--disable-builddir', '--enable-static', " >> $LIBFFI_PATH
           echo "                    '--disable-docs', _env=env)" >> $LIBFFI_PATH
           echo "            shprint(sh.make, _env=env)" >> $LIBFFI_PATH
           echo "" >> $LIBFFI_PATH
@@ -285,7 +288,7 @@ jobs:
       - name: Verify APK
         run: |
           if ls bin/grokfarewell.apk >/dev/null 2>&1; then
-            /home/runner/.buildozer/android/platform/android-sdk/build-tools/34.0.0/apksigner 
+            /home/runner/.buildozer/android/platform/android-sdk/build-tools/34.0.0/apksigner \
               verify bin/grokfarewell*.apk
           else
             echo "No APK file found, skipping verification"
@@ -313,13 +316,13 @@ jobs:
         shell: bash
       - name: Generate Checksum
         run: |
-          python checksum_android.py > bin/CHECKSUM.txt || 
+          python checksum_android.py > bin/CHECKSUM.txt || \
             echo "No APK file found, skipping checksum" > bin/CHECKSUM.txt
         shell: bash
         continue-on-error: true
       - run: |
-          zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/.apk bin/.txt || 
-            zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/.txt
+          zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.apk bin/*.txt || \
+            zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.txt
         shell: bash
         continue-on-error: true
       - uses: actions/upload-artifact@v4
@@ -342,13 +345,9 @@ jobs:
           echo "set -e" >> prepare_buildozer_logs.sh
           echo "mkdir -p buildozer-logs" >> prepare_buildozer_logs.sh
           echo "echo 'Preparing Buildozer logs...'" >> prepare_buildozer_logs.sh
-          echo "find $HOME/.buildozer -type f -name '.log' -exec cp {} buildozer-logs/ ;" > temp_script.sh
-          echo "cat temp_script.sh >> prepare_buildozer_logs.sh" >> temp_script.sh
-          chmod +x temp_script.sh
-          ./temp_script.sh
-          rm temp_script.sh
+          echo "find $HOME/.buildozer -type f -name '*.log' -exec cp {} buildozer-logs/ \;" >> prepare_buildozer_logs.sh
           echo "if [ -f buildozer.log ]; then cp buildozer.log buildozer-logs/; fi" >> prepare_buildozer_logs.sh
-          echo "if [ -d buildozer-logs ] && [ "$(ls -A buildozer-logs)" ]; then" >> prepare_buildozer_logs.sh
+          echo "if [ -d buildozer-logs ] && [ \"$(ls -A buildozer-logs)\" ]; then" >> prepare_buildozer_logs.sh
           echo "  zip -r buildozer-logs.zip buildozer-logs/" >> prepare_buildozer_logs.sh
           echo "  touch buildozer-logs-prepared" >> prepare_buildozer_logs.sh
           echo "else" >> prepare_buildozer_logs.sh
