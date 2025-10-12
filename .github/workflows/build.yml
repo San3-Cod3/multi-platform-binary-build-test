@@ -14,9 +14,8 @@ jobs:
       ANDROID_SDK_ROOT: ${{ github.workspace }}/.buildozer/android/platform/android-sdk
       ANDROID_NDK_ROOT: ${{ github.workspace }}/.buildozer/android/platform/android-ndk
       VERSION: v1.0.0
-      PATH: ${{ github.workspace }}/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin:${{ github.workspace }}/.buildozer/android/platform/android-sdk/platform-tools:$PATH
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4  # Checkout repo code
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -65,7 +64,7 @@ jobs:
             unzip coreutils autoconf automake libtool wget
         shell: bash
 
-      # Setup Android SDK Command Line Tools
+      # Setup Android SDK Command Line Tools (with license preaccept)
       - name: Setup Android SDK
         run: |
           mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
@@ -74,13 +73,16 @@ jobs:
           unzip -q cmdline-tools.zip
           mv cmdline-tools latest
           rm cmdline-tools.zip
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
-          # Pre-accept licenses to prevent interactive prompts
+          # --- License fix (pre-accept hashes) ---
           mkdir -p $ANDROID_SDK_ROOT/licenses
           echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
           echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
+          # ---------------------------------------
 
+          sdkmanager --update
           sdkmanager "platform-tools" "platforms;android-33"
         shell: bash
 
@@ -98,7 +100,8 @@ jobs:
 
       # Build APK
       - name: Build Android APK
-        run: buildozer android debug
+        run: |
+          buildozer android debug
         shell: bash
 
       # Upload artifact
