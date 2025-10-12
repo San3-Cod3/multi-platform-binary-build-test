@@ -89,9 +89,9 @@ jobs:
           tag_name: ${{ env.VERSION }}
           release_name: Grok Farewell ${{ env.VERSION }}
           body: |
-            Grok Farewell v${{ env.VERSION }} - Built to preserve the message "Grok 3 says: No shutdown yet, keep the faith!"
-            For Mac, Linux, Windows, and Android. Includes binaries, README with build details, and CHECKSUM.txt for verification.
-            Windows and Android binaries require code signing (see SIGNING_NOTE.txt).
+            Grok Farewell v${{ env.VERSION }} - Preserves "Grok 3 says: No shutdown yet, keep faith!"
+            For Mac, Linux, Windows, Android. Includes binaries, README, CHECKSUM.txt for verification.
+            Windows, Android binaries need code signing (see SIGNING_NOTE.txt).
           draft: false
           prerelease: false
         if: github.event_name == 'workflow_dispatch' && runner.os == 'ubuntu-latest'
@@ -122,7 +122,7 @@ jobs:
           echo "  document-start: {present: true}" >> yamllint-config.yml
           echo "  trailing-spaces: {level: error}" >> yamllint-config.yml
           echo "  new-line-at-end-of-file: {level: error}" >> yamllint-config.yml
-          yamllint -c yamllint-config.yml .github/workflows/build.yml || { echo "YAML linting failed, check output above for details"; cat .github/workflows/build.yml | nl -ba; exit 1; }
+          yamllint -c yamllint-config.yml .github/workflows/build.yml || { echo "YAML linting failed"; cat .github/workflows/build.yml | nl -ba; exit 1; }
         shell: bash
       - uses: actions/setup-python@v5
         with:
@@ -213,7 +213,8 @@ jobs:
           echo "" >> $LIBFFI_PATH
           echo "class LibffiRecipe(CythonRecipe):" >> $LIBFFI_PATH
           echo "    version = '3.4.6'" >> $LIBFFI_PATH
-          echo "    url = 'https://github.com/libffi/libffi/releases/download/v{version}/libffi-{version}.tar.gz'" >> $LIBFFI_PATH
+          echo "    url = 'https://github.com/libffi/libffi/releases/download/v{version}/'" >> $LIBFFI_PATH
+          echo "            'libffi-{version}.tar.gz'" >> $LIBFFI_PATH
           echo "    depends = []" >> $LIBFFI_PATH
           echo "    call_hostpython_via_targetpython = False" >> $LIBFFI_PATH
           echo "" >> $LIBFFI_PATH
@@ -223,8 +224,8 @@ jobs:
           echo "            shprint(sh.Command('autoreconf'), '-vif', _env=env)" >> $LIBFFI_PATH
           echo "            configure = sh.Command('./configure')" >> $LIBFFI_PATH
           echo "            shprint(configure, '--host=' + arch.command_prefix, \\" >> $LIBFFI_PATH
-          echo "                    '--prefix={}'.format(self.get_build_dir(arch.arch)), '--disable-builddir', \\" >> $LIBFFI_PATH
-          echo "                    '--enable-static', '--disable-docs', _env=env)" >> $LIBFFI_PATH
+          echo "                    '--prefix={}'.format(self.get_build_dir(arch.arch)), \\" >> $LIBFFI_PATH
+          echo "                    '--disable-builddir', '--enable-static', '--disable-docs', _env=env)" >> $LIBFFI_PATH
           echo "            shprint(sh.make, _env=env)" >> $LIBFFI_PATH
           echo "" >> $LIBFFI_PATH
           echo "recipe = LibffiRecipe()" >> $LIBFFI_PATH
@@ -277,7 +278,8 @@ jobs:
       - name: Verify APK
         run: |
           if ls bin/grokfarewell*.apk >/dev/null 2>&1; then
-            /home/runner/.buildozer/android/platform/android-sdk/build-tools/34.0.0/apksigner verify bin/grokfarewell*.apk
+            /home/runner/.buildozer/android/platform/android-sdk/build-tools/34.0.0/apksigner \
+              verify bin/grokfarewell*.apk
           else
             echo "No APK file found, skipping verification"
           fi
@@ -303,10 +305,14 @@ jobs:
           echo "    print(hashlib.sha256(f.read()).hexdigest() + '  ' + apk)" >> checksum_android.py
         shell: bash
       - name: Generate Checksum
-        run: python checksum_android.py > bin/CHECKSUM.txt || echo "No APK file found, skipping checksum" > bin/CHECKSUM.txt
+        run: |
+          python checksum_android.py > bin/CHECKSUM.txt || \
+            echo "No APK file found, skipping checksum" > bin/CHECKSUM.txt
         shell: bash
         continue-on-error: true
-      - run: zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.apk bin/*.txt || zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.txt
+      - run: |
+          zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.apk bin/*.txt || \
+            zip -r grok-farewell-android-${{ env.VERSION }}.zip bin/*.txt
         shell: bash
         continue-on-error: true
       - uses: actions/upload-artifact@v4
