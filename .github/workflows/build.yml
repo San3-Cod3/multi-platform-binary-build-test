@@ -2,7 +2,6 @@ name: Build Python Binaries
 on: [push, workflow_dispatch]
 jobs:
   build-desktop:
-    # Unchanged, as it is working correctly
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
