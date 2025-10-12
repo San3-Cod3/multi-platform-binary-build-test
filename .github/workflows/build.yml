@@ -43,7 +43,7 @@ jobs:
           source.include_exts = py
           source.dir = .
           version = 0.1
-          requirements = python3,kivy
+          requirements = python3,kivy,pyjnius @ git+https://github.com/kivy/pyjnius.git#egg=pyjnius
           orientation = portrait
 
           [buildozer]
