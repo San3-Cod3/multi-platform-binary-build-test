@@ -124,7 +124,12 @@ jobs:
           echo "  document-start: {present: true}" >> yamllint-config.yml
           echo "  trailing-spaces: {level: error}" >> yamllint-config.yml
           echo "  new-line-at-end-of-file: {level: error}" >> yamllint-config.yml
-          yamllint -c yamllint-config.yml .github/workflows/build.yml || { echo "YAML linting failed"; cat .github/workflows/build.yml | nl -ba; exit 1; }
+          yamllint -c yamllint-config.yml .github/workflows/build.yml || \
+          { \
+            echo "YAML linting failed"; \
+            cat .github/workflows/build.yml | nl -ba; \
+            exit 1; \
+          }
         shell: bash
       - name: Lint YAML Debug
         run: |
@@ -259,5 +264,5 @@ jobs:
           echo "android.ndk_path = ~/.buildozer/android/platform/android-ndk" >> buildozer.spec
         shell: bash
 
-      # Remaining Android build steps: Debug environment, build, verify APK, create checksums,
-      # zip artifacts, upload logs, upload release assets, as in your original workflow.
+    # Remaining Android build steps: Debug environment, build, verify APK, create checksums,
+    # zip artifacts, upload logs, upload release assets, as in your original workflow.
