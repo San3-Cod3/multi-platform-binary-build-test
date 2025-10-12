@@ -75,14 +75,16 @@ jobs:
           rm cmdline-tools.zip
           export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
 
+          # Pre-create licenses dir
           mkdir -p $ANDROID_SDK_ROOT/licenses
 
-          # Accept licenses safely, ignoring broken pipe exit
+          # --- New Fix: auto-accept all licenses ---
           yes | sdkmanager --licenses || true
+          # -----------------------------------------
 
-          # Update and install everything
-          sdkmanager --update || true
-          yes | sdkmanager "platform-tools" "platforms;android-33" "build-tools;36.1.0" || true
+          # Now safely install required packages
+          sdkmanager --update
+          yes | sdkmanager "platform-tools" "platforms;android-33" "build-tools;36.1.0"
         shell: bash
 
       # Download and set up Android NDK
