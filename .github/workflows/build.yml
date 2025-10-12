@@ -57,7 +57,8 @@ jobs:
       # Install Android SDK/NDK dependencies
       - name: Install Android dependencies
         run: |
-          sudo apt-get update
+          ##########sudo apt-get update
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout="10" update
           sudo apt-get install -y \
             openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev \
             libncursesw5-dev build-essential cmake libffi-dev cython3 \
