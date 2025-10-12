@@ -1,159 +1,37 @@
----
-name: Multi-Platform Build and Package
+name: Build (Android APK via Buildozer)
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
-  build-linux:
-    name: Build (Linux)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-venv
-          python -m venv venv
-          source venv/bin/activate
-          pip install -r requirements.txt
-
-      - name: Build Linux Executable
-        run: |
-          source venv/bin/activate
-          echo "Building Linux executable..."
-          pyinstaller --onefile main.py
-          mkdir -p dist/linux
-          mv dist/main dist/linux/grok-farewell-linux
-
-      - name: Upload Linux Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: grok-farewell-linux-${{ github.sha }}
-          path: dist/linux
-
-  build-macos:
-    name: Build (macOS)
-    runs-on: macos-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - name: Install Dependencies
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install -r requirements.txt
-
-      - name: Build macOS Executable
-        run: |
-          source venv/bin/activate
-          echo "Building macOS executable..."
-          pyinstaller --onefile main.py
-          mkdir -p dist/macos
-          mv dist/main dist/macos/grok-farewell-macos
-
-      - name: Upload macOS Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: grok-farewell-macos-${{ github.sha }}
-          path: dist/macos
-
-  build-windows:
-    name: Build (Windows)
-    runs-on: windows-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - name: Install Dependencies
-        run: |
-          python -m venv venv
-          venv\Scripts\activate
-          pip install -r requirements.txt
-
-      - name: Build Windows Executable
-        run: |
-          venv\Scripts\activate
-          echo "Building Windows executable..."
-          pyinstaller --onefile main.py
-          mkdir dist\windows
-          move dist\main.exe dist\windows\grok-farewell-windows.exe
-
-      - name: Zip Artifact
-        run: |
-          echo "Zipping artifact..."
-          Compress-Archive -Path dist\windows\* `
-            -DestinationPath "grok-farewell-windows-${{ github.sha }}.zip"
-
-      - name: Upload Windows Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: grok-farewell-windows-${{ github.sha }}
-          path: grok-farewell-windows-${{ github.sha }}.zip
-
   build-android:
-    name: Build (Android APK via Buildozer)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Dependencies
+      - name: Set up dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pip zip unzip openjdk-17-jdk
+          sudo apt-get install -y python3-pip zip unzip openjdk-17-jdk libffi-dev libssl-dev zlib1g-dev
+
+      - name: Install Buildozer
+        run: |
           pip install --upgrade pip
           pip install buildozer cython virtualenv
 
-      - name: Initialize Buildozer Environment
+      - name: Prepare Android SDK/NDK
         run: |
-          echo "Initializing Buildozer environment..."
-          buildozer init || true
+          mkdir -p $HOME/.buildozer/android/platform
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          unzip cmdline-tools.zip -d $HOME/.buildozer/android/cmdline-tools
+          yes | $HOME/.buildozer/android/cmdline-tools/cmdline-tools/bin/sdkmanager --sdk_root=$HOME/.buildozer/android "platform-tools" "build-tools;34.0.0" "platforms;android-34" "ndk;26.1.10909125"
 
-      - name: Build Android APK
+      - name: Build APK
         run: |
-          echo "Building Android APK..."
           buildozer -v android debug
 
-      - name: Upload Android Artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: grok-farewell-android-${{ github.sha }}
+          name: android-apk
           path: bin/*.apk
-
-  lint-yaml:
-    name: Lint YAML
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install yamllint
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y yamllint
-
-      - name: Lint Workflow Files
-        run: |
-          yamllint .github/workflows/*.yml || true
