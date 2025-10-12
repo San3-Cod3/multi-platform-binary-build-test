@@ -134,10 +134,13 @@ jobs:
           sudo apt-get install -y openjdk-17-jdk python3-dev zlib1g-dev libncurses5-dev libncursesw5-dev build-essential cmake libffi-dev cython3 unzip coreutils
         shell: bash
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: '13.0'
-          packages: 'platforms;android-34 build-tools;34.0.0 platform-tools'
+        run: |
+          mkdir -p /home/runner/.buildozer/android/platform/android-sdk
+          cd /home/runner/.buildozer/android/platform/android-sdk
+          curl -L -o commandlinetools-linux-11076708_latest.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q commandlinetools-linux-11076708_latest.zip
+          mv cmdline-tools cmdline-tools/latest
+        shell: bash
       - name: Debug SDK Setup
         run: |
           echo "Checking SDK directory structure:"
@@ -149,14 +152,14 @@ jobs:
         shell: bash
       - name: Accept Android SDK Licenses
         run: |
-          export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           yes | /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses --sdk_root=/home/runner/.buildozer/android/platform/android-sdk
         shell: bash
         continue-on-error: true
       - name: Install Android Build Tools and Platform Tools
         run: |
-          export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
-          /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/home/runner/.buildozer/android/platform/android-sdk "build-tools;34.0.0" "platform-tools"
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/home/runner/.buildozer/android/platform/android-sdk "platforms;android-34" "build-tools;34.0.0" "platform-tools"
         shell: bash
       - name: Download Android NDK
         run: |
@@ -214,7 +217,7 @@ jobs:
         env:
           ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
           ANDROID_NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk
-          JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
         shell: bash
         continue-on-error: true
       - name: Verify APK
@@ -284,6 +287,7 @@ jobs:
           chmod +x prepare_buildozer_logs.sh
           ls -la prepare_buildozer_logs.sh
         shell: bash
+        continue-on-error: true
       - name: Prepare Buildozer Logs
         run: |
           if [ -f prepare_buildozer_logs.sh ]; then
