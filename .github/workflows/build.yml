@@ -195,6 +195,9 @@ jobs:
         #shell: bash
       - run: "echo -e \"\\n\\n------\\nLauncher activity info:\" >> build-info.txt && apk_path=$(ls bin/*.apk 2>/dev/null || echo \"\") && if [[ -n \"$apk_path\" ]]; then command -v aapt >/dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y aapt); if command -v aapt >/dev/null 2>&1; then aapt dump xmltree \"$apk_path\" AndroidManifest.xml 2>/dev/null | awk '/E: activity/ {a=\\$0} /android.intent.category.LAUNCHER/ && a {print a; print; a=\\\"\\\"}' >> build-info.txt || echo \"No launcher info\" >> build-info.txt; else echo \"aapt not found after install\" >> build-info.txt; fi; else echo \"APK not found\" >> build-info.txt; fi"
         shell: bash
+        # Extra robust one-liner to catch edge cases
+      - run: "echo -e \"\\n\\n------\\nLauncher activity info (UTC $(date -u)):\" >> build-info.txt && apk_path=$(ls bin/*.apk 2>/dev/null | head -n 1 || echo \"\") && if [[ -n \\\"$apk_path\\\" ]]; then command -v aapt >/dev/null 2>&1 || (sudo apt-get update -qq && sudo apt-get install -y aapt >/dev/null); if command -v aapt >/dev/null 2>&1; then (aapt dump xmltree \\\"$apk_path\\\" AndroidManifest.xml 2>/dev/null | awk 'BEGIN{inActivity=0;name=\"\"} /E: activity/ {inActivity=1;name=\"\"} /A: android:name\\(.*\\)=\\\".*\\\"/ && inActivity && name==\"\" {match($0, /\\\".*\\\"/, m); name=m[0]} /android.intent.category.LAUNCHER/ && inActivity {print \"Launcher Activity:\", name; inActivity=0}' >> build-info.txt) || echo \"No launcher info (aapt parse error)\" >> build-info.txt; else echo \"aapt not found after install\" >> build-info.txt; fi; else echo \"APK not found in bin/*.apk\" >> build-info.txt; fi"
+        shell: bash
 
       # Upload: "build-info.txt" artifact text file to GitHub Actions
       - name: Upload build info artifact
