@@ -158,6 +158,41 @@ jobs:
           name: grok-farewell-android-${{ env.VERSION }}
           path: bin/*.apk
 
+          #
+          #...#
+      - name: Generate build info
+        run: |
+          ( echo "Build info at: $(date)";
+            echo "SDK root: ${ANDROID_SDK_ROOT:-N/A}";
+            echo "NDK root: ${ANDROID_NDK_ROOT:-N/A}";
+            apk_path=$(ls bin/*.apk 2>/dev/null || echo "");
+            if [[ -n "$apk_path" ]]; then
+              echo "APK size: $(stat -c%s "$apk_path" 2>/dev/null || echo 'unknown') bytes";
+              #...#
+              #command -v aapt >/dev/null 2>&1 || sudo apt-get update && sudo apt-get install -y aapt;
+              # Safety?
+              command -v aapt >/dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y aapt);
+              #...#
+              if command -v aapt >/dev/null 2>&1; then
+                echo -e "\nLauncher activity info:";
+                aapt dump xmltree "$apk_path" AndroidManifest.xml 2>/dev/null | grep -A 10 "LAUNCHER" || echo "No launcher activity info found";
+              else
+                echo "aapt not found, skipping launcher info";
+              fi;
+            else
+              echo "APK not found";
+            fi
+          ) > build-info.txt
+        shell: bash
+
+      - name: Upload build info artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-info
+          path: build-info.txt    
+          #...#
+          #
+
   ############################################
   # Desktop Build Job (Linux, macOS, Windows)
   ############################################
