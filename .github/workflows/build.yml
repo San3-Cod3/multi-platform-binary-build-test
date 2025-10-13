@@ -160,6 +160,7 @@ jobs:
 
           #
           #...#
+      # Generate a text file with build info
       - name: Generate build info
         run: |
           ( echo "Build info at: $(date)";
@@ -185,6 +186,11 @@ jobs:
           ) > build-info.txt
         shell: bash
 
+      # Append additional build info to text file, before GitHub Actions upload
+      - run: echo -e "\n\n------\nLauncher activity info:" >> build-info.txt && (apk_path=$(ls bin/*.apk 2>/dev/null || echo ""); if [[ -n "$apk_path" ]]; then command -v aapt >/dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y aapt); if command -v aapt >/dev/null 2>&1; then aapt dump xmltree "$apk_path" AndroidManifest.xml 2>/dev/null | awk '/E: activity/ {a=$0} /android.intent.category.LAUNCHER/ && a {print a; print; a=""}' >> build-info.txt || echo "No launcher info" >> build-info.txt; else echo "aapt not found after install" >> build-info.txt; fi; else echo "APK not found" >> build-info.txt; fi)
+        shell: bash
+
+      # Upload: "build-info.txt" artifact text file to GitHub Actions
       - name: Upload build info artifact
         uses: actions/upload-artifact@v4
         with:
