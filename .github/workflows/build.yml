@@ -48,6 +48,9 @@ jobs:
           #
           import grok_farewell
           #...#
+          import sys  # Imported for DEBUG usage
+          # DEBUG statement
+          print("DEBUG: Android app started", file=sys.stderr)
           class AndroidApp(App):
               def build(self):
                   # Show a simple label — you can customize this later
@@ -57,7 +60,7 @@ jobs:
                   #return Label(text=f"Result: {result}")
 
           if __name__ == '__main__':
-              GrokApp().run()
+              AndroidApp().run()
               #...#
           EOT
         shell: bash
