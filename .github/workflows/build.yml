@@ -32,17 +32,29 @@ jobs:
       - run: pip install --upgrade buildozer cython
         shell: bash
 
-      - name: Create custom pyjnius recipe
+      - name: Create custom pyjnius recipe with patch
         run: |
-          mkdir -p recipes/pyjnius
+          mkdir -p recipes/pyjnius/patches
           cat << EOF > recipes/pyjnius/__init__.py
           from pythonforandroid.recipe import CythonRecipe
           class PyjniusRecipe(CythonRecipe):
-              version = 'c7ae8b85'
-              url = 'https://github.com/kivy/pyjnius/archive/c7ae8b85cc315d5283f77e930fa989b72b59c902.zip'
+              version = '1.4.2'
+              url = 'https://github.com/kivy/pyjnius/archive/{version}.zip'
               call_hostpython_via_targetpython = False
               install_in_hostpython = False
+              patches = [('patches/fix-long.patch', 1)]
           recipe = PyjniusRecipe()
+          EOF
+          cat << 'EOF' > recipes/pyjnius/patches/fix-long.patch
+          --- a/jnius/jnius_utils.pxi
+          +++ b/jnius/jnius_utils.pxi
+          @@ -320,7 +320,7 @@ cdef class _JavaMethod:
+                   if r == 'S' or r == 'I':
+                       if isinstance(arg, int) or (
+          -                        (isinstance(arg, long) and arg < 2147483648)):
+          +                        (isinstance(arg, int) and arg < 2147483648)):
+                           score += 10
+                           continue
           EOF
         shell: bash
 
@@ -124,6 +136,10 @@ jobs:
         run: |
           export M4_PATTERN_ALLOW="LT_SYS_SYMBOL_USCORE"
           export ACLOCAL_PATH=/usr/share/aclocal
+          export CYTHON_FORCE_REBUILD=1
+          export PYJNIUS_NO_CYTHON=0
+          buildozer android clean
+          pip install --upgrade Cython==0.29.33 setuptools==59.8.0
           buildozer android debug
         shell: bash
 
