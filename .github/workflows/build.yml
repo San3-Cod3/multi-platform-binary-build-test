@@ -138,7 +138,7 @@ jobs:
           export ACLOCAL_PATH=/usr/share/aclocal
           export CYTHON_FORCE_REBUILD=1
           export PYJNIUS_NO_CYTHON=0
-          buildozer android clean
+          mkdir -p .buildozer/android/platform/python-for-android
           pip install --upgrade Cython==0.29.33 setuptools==59.8.0
           buildozer android debug
         shell: bash
