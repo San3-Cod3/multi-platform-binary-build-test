@@ -68,6 +68,7 @@ jobs:
           package.domain = org.example
           source.include_exts = py
           source.dir = .
+          source.main = grok_farewell.py
           version = 0.1
           requirements = python3,kivy,pyjnius
           orientation = portrait
