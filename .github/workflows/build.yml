@@ -38,8 +38,8 @@ jobs:
           cat << EOF > recipes/pyjnius/__init__.py
           from pythonforandroid.recipe import CythonRecipe
           class PyjniusRecipe(CythonRecipe):
-              version = '1.6.1'
-              url = 'https://github.com/kivy/pyjnius/archive/{version}.zip'
+              version = 'c7ae8b85'
+              url = 'https://github.com/kivy/pyjnius/archive/c7ae8b85cc315d5283f77e930fa989b72b59c902.zip'
               call_hostpython_via_targetpython = False
               install_in_hostpython = False
           recipe = PyjniusRecipe()
