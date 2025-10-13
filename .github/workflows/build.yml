@@ -32,10 +32,33 @@ jobs:
       - run: pip install --upgrade buildozer cython
         shell: bash
 
-      - name: Create main.py entry point
+      - name: Create main.py entry point () with Kivy App (Android only)
         run: |
           cat << EOT > main.py
+          #
+          #
+          # Creating an Android UI
+          from kivy.app import App
+          from kivy.uix.label import Label
+          # For use later
+          #from grok_farewell import some_function  # suppose you have this
+          #
+          #
           from grok_farewell import *
+          #
+          import grok_farewell
+          #...#
+          class AndroidApp(App):
+              def build(self):
+                  # Show a simple label — you can customize this later
+                  return Label(text="Android app running!")
+                  # For use when real .py has more features and functions
+                  #result = some_function()
+                  #return Label(text=f"Result: {result}")
+
+          if __name__ == '__main__':
+              GrokApp().run()
+              #...#
           EOT
         shell: bash
 
