@@ -32,6 +32,13 @@ jobs:
       - run: pip install --upgrade buildozer cython
         shell: bash
 
+      - name: Create main.py entry point
+        run: |
+          cat << EOT > main.py
+          from grok_farewell import *
+          EOT
+        shell: bash
+
       - name: Create custom pyjnius recipe with patch
         run: |
           mkdir -p recipes/pyjnius/patches
@@ -68,7 +75,7 @@ jobs:
           package.domain = org.example
           source.include_exts = py
           source.dir = .
-          source.main = grok_farewell.py
+          source.main = main.py
           version = 0.1
           requirements = python3,kivy,pyjnius
           orientation = portrait
