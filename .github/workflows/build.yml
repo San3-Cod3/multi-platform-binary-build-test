@@ -257,8 +257,10 @@ jobs:
           python-version: '3.8'  # Downgrade Python to 3.8, for Windows 7 x64 SP1 support
           # x86 Windows binary support for x86-only Windows 7 SP1 (32-bit OS/hardware)
           # Commented out original line due to triggering Python 3.8.18 dependency on missing libintl.8.dylib for macOS x64; modified to conditional x86-only for Windows to preserve legacy support without breaking macOS
-          #architecture: ${{ runner.os == 'Windows' && 'x86' || 'x64' }}
-          architecture: ${{ runner.os == 'Windows' && 'x86' }}  # Set x86 architecture only for Windows (for x86-only Windows 7 SP1 compatibility); omitted for macOS/Linux to default to x64 without triggering libintl.8.dylib dependency issue on macOS
+          #architecture: ${{ runner.os == 'Windows' && 'x86' || 'x64' }}  # x86 Windows binary support for x86-only Windows 7 SP1 (32-bit OS/hardware); omitted due to triggering Python 3.8.18 dependency on missing libintl.8.dylib for macOS x64; modified to conditional x86-only for Windows to preserve legacy support without breaking macOS
+          # Commented out due to 'false' architecture error on Ubuntu in v0.1.4
+          #architecture: ${{ runner.os == 'Windows' && 'x86' }}  # Set x86 architecture only for Windows (for x86-only Windows 7 SP1 compatibility); omitted for macOS/Linux to default to x64 without triggering libintl.8.dylib dependency issue on macOS; omitted due to 'false' architecture error on Ubuntu in v0.1.4
+          architecture: ${{ runner.os == 'Windows' && 'x86' || '' }}  # x86 for Windows, empty for macOS/Linux to use default x64, avoiding 'false' error on Ubuntu and libintl.8.dylib issue on macOS
 
       - name: Cache pip
         uses: actions/cache@v4
