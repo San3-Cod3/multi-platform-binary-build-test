@@ -256,7 +256,9 @@ jobs:
           #python-version: '3.10'
           python-version: '3.8'  # Downgrade Python to 3.8, for Windows 7 x64 SP1 support
           # x86 Windows binary support for x86-only Windows 7 SP1 (32-bit OS/hardware)
+          # Commented out original line due to triggering Python 3.8.18 dependency on missing libintl.8.dylib for macOS x64; modified to conditional x86-only for Windows to preserve legacy support without breaking macOS
           #architecture: ${{ runner.os == 'Windows' && 'x86' || 'x64' }}
+          architecture: ${{ runner.os == 'Windows' && 'x86' }}  # Set x86 architecture only for Windows (for x86-only Windows 7 SP1 compatibility); omitted for macOS/Linux to default to x64 without triggering libintl.8.dylib dependency issue on macOS
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -274,7 +276,9 @@ jobs:
         shell: bash
       #...#
 
-      - run: pip install pyinstaller
+      # Commented out previous installation command to avoid unix-like quirks with pip version detection and PATH; uses python3 -m pip to invoke upgraded pip module directly
+      #- run: pip install pyinstaller
+      - run: python3 -m pip install pyinstaller  # Use python3 -m pip to invoke upgraded pip module directly, avoiding version warning from old pip executable
         shell: bash
 
       - run: mkdir -p spec
