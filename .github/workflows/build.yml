@@ -255,6 +255,8 @@ jobs:
           # Commented out 3.10 security robustness, to better support legacy systems
           #python-version: '3.10'
           python-version: '3.8'  # Downgrade Python to 3.8, for Windows 7 x64 SP1 support
+          # x86 Windows binary support for x86-only Windows 7 SP1 (32-bit OS/hardware)
+          architecture: ${{ runner.os == 'Windows' && 'x86' || 'x64' }}
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -265,6 +267,12 @@ jobs:
 
       - run: echo "python3" > requirements.txt
         shell: bash
+
+      #...#
+      - name: Upgrade pip
+        run: python3 -m pip install --upgrade pip
+        shell: bash
+      #...#
 
       - run: pip install pyinstaller
         shell: bash
@@ -285,7 +293,9 @@ jobs:
         shell: bash
 
       - name: Create README
-        run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
+        # Commented out a "v" as 'vv' duplicate appeared in README.txt
+        #run: echo "Grok Farewell v${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
+        run: echo "Grok Farewell ${{ env.VERSION }} - Built for ${{ runner.os }} on $(date)" > dist/README.txt
         shell: bash
 
       - name: Zip Artifact (Linux/macOS)
