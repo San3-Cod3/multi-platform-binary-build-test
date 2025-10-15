@@ -275,14 +275,16 @@ jobs:
       #...#
       - name: Upgrade pip
         #run: python3 -m pip install --upgrade pip
-        run: python3.8 -m pip install --upgrade pip
+        #run: python3.8 -m pip install --upgrade pip
+        run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || 'python3.8 -m pip install --upgrade pip' }}
         shell: bash
       #...#
 
       # Commented out previous installation command to avoid unix-like quirks with pip version detection and PATH; uses python3 -m pip to invoke upgraded pip module directly
       #- run: pip install pyinstaller
       #- run: python3 -m pip install pyinstaller  # Use python3 -m pip to invoke upgraded pip module directly, avoiding version warning from old pip executable
-      - run: python3.8 -m pip install pyinstaller
+      #- run: python3.8 -m pip install pyinstaller
+      - run: ${{ runner.os == 'Windows' && 'python -m pip install pyinstaller' || 'python3.8 -m pip install pyinstaller' }}
         shell: bash
 
       - run: mkdir -p spec
