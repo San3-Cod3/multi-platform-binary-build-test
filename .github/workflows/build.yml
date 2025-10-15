@@ -375,7 +375,7 @@ jobs:
       #- run: python3.8 -m pip install pyinstaller
       #- run: ${{ runner.os == 'Windows' && 'python -m pip install pyinstaller' || 'python3.8 -m pip install pyinstaller' }}
       #- run: ${{ runner.os == 'Windows' && 'python -m pip install pyinstaller' || (runner.os == 'macOS' && 'pip install pyinstaller') || 'python3.8 -m pip install pyinstaller' }}  # Platform-specific: python for Windows, plain pip for macOS, python3.8 for Linux
-      - run: ${{ runner.os == 'Windows' && 'python -m pip install pyinstaller' || 'sudo python3 pip install pyinstaller' }}  # Platform-specific: python for Windows to avoid exit 127, plain pip for macOS/Linux to use setup-python's pip and silence warning
+      - run: ${{ runner.os == 'Windows' && 'python -m pip install pyinstaller' || 'sudo python3.8 pip install pyinstaller' }}  # Platform-specific: python for Windows to avoid exit 127, plain pip for macOS/Linux to use setup-python's pip and silence warning
         shell: bash
 
       - run: mkdir -p spec
