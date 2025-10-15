@@ -259,6 +259,16 @@ jobs:
         run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || (runner.os == 'macOS' && 'pip install pip==25.2') || 'python3 -m pip install --upgrade pip' }}  # Three-way: python for Windows, plain pip for macOS to avoid PEP 668, python3 for Linux to use runner’s Python and silence macOS warning
         shell: bash
 
+      #''''''
+      - name: Update PATH and upgrade pip for macOS
+        run: |
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            echo "/Users/runner/Library/Python/3.8/bin" >> $GITHUB_PATH
+            python3.8 -m pip install pip==25.0.1 --user || true
+          fi
+        shell: bash
+      #''''''
+
       - uses: actions/setup-python@v5
         with:
           # Commented out 3.10 security robustness, to better support legacy systems
