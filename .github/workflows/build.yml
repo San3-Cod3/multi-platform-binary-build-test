@@ -280,12 +280,13 @@ jobs:
         shell: bash
 
       #...#
-      #- name: Upgrade pip
+      - name: Upgrade pip
         #run: python3 -m pip install --upgrade pip
         #run: python3.8 -m pip install --upgrade pip
         #run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || 'python3.8 -m pip install --upgrade pip' }}
         #run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || (runner.os == 'macOS' && 'pip install --upgrade pip') || 'python3.8 -m pip install --upgrade pip' }}  # Platform-specific: python for Windows, plain pip for macOS (default PATH), python3.8 for Linux
-        #shell: bash
+        run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || (runner.os == 'macOS' && 'python3.8 -m pip install --upgrade pip --user') || 'python3 -m pip install --upgrade pip' }}
+        shell: bash
       #...#
 
       # Commented out previous installation command to avoid unix-like quirks with pip version detection and PATH; uses python3 -m pip to invoke upgraded pip module directly
