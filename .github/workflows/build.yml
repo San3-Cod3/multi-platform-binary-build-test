@@ -256,7 +256,7 @@ jobs:
         #run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || 'python3 -m pip install --upgrade pip' }}  # Early upgrade using default python3 for macOS/Linux to ensure setup-python uses modern pip (25.0.1+), silencing macOS warning
         ##########run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || (runner.os == 'macOS' && 'pip install --upgrade pip') || 'python3 -m pip install --upgrade pip' }}  # Three-way: python for Windows, plain pip for macOS to avoid PEP 668, python3 for Linux to use runner’s Python and silence macOS warning
         ##########run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || (runner.os == 'macOS' && 'pip install pip==25.0.1') || 'python3 -m pip install --upgrade pip' }}  # Three-way: python for Windows, plain pip for macOS to avoid PEP 668, python3 for Linux to use runner’s Python and silence macOS warning
-        run: ${{ runner.os == 'Windows' && 'sudo python -m pip install --upgrade pip' || (runner.os == 'macOS' && 'sudo pip install pip==25.2') || 'python3 -m pip install --upgrade pip' }}  # Three-way: python for Windows, plain pip for macOS to avoid PEP 668, python3 for Linux to use runner’s Python and silence macOS warning
+        run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || (runner.os == 'macOS' && 'sudo pip install pip==25.2') || 'python3 -m pip install --upgrade pip' }}  # Three-way: python for Windows, plain pip for macOS to avoid PEP 668, python3 for Linux to use runner’s Python and silence macOS warning
         shell: bash
 
       #''''''
