@@ -315,7 +315,7 @@ jobs:
           if [ "${{ runner.os }}" = "Windows" ]; then
             python -m pip install --upgrade pip
           elif [ "${{ runner.os }}" = "macOS" ]; then
-            pip install pip==25.2
+            pip install pip==25.2 --user
             echo "/Users/runner/Library/Python/3.8/bin" >> $GITHUB_PATH
           else
             python3 -m pip install --upgrade pip
