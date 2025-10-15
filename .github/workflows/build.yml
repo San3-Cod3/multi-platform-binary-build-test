@@ -364,7 +364,7 @@ jobs:
             sudo pip install pip==25.0.1 --user
             echo "/Users/runner/Library/Python/3.8/bin" >> $GITHUB_PATH
           else
-            sudo python3 -m pip install --upgrade pip
+            python3 -m pip install --upgrade pip
           fi  
         shell: bash
       #...#
