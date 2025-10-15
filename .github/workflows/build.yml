@@ -286,7 +286,16 @@ jobs:
         #run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || 'python3.8 -m pip install --upgrade pip' }}
         #run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || (runner.os == 'macOS' && 'pip install --upgrade pip') || 'python3.8 -m pip install --upgrade pip' }}  # Platform-specific: python for Windows, plain pip for macOS (default PATH), python3.8 for Linux
         ##########run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || (runner.os == 'macOS' && 'python3.8 -m pip install --upgrade pip --user') || 'python3 -m pip install --upgrade pip' }}
-        run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || (runner.os == 'macOS' && 'python3.8 -m pip install pip==25.0.1 --user') || 'python3 -m pip install --upgrade pip' }}  # Post-setup-python: python for Windows, python3.8 pip==25.0.1 --user for macOS to match warning, python3 for Linux to avoid exit 127
+        ##########run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || (runner.os == 'macOS' && 'python3.8 -m pip install pip==25.0.1 --user') || 'python3 -m pip install --upgrade pip' }}  # Post-setup-python: python for Windows, python3.8 pip==25.0.1 --user for macOS to match warning, python3 for Linux to avoid exit 127
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            python -m pip install --upgrade pip
+          elif [ "${{ runner.os }}" = "macOS" ]; then
+            python3.8 -m pip install pip==25.0.1 --user
+            echo "/Users/runner/Library/Python/3.8/bin" >> $GITHUB_PATH
+          else
+            python3 -m pip install --upgrade pip
+          fi
         shell: bash
       #...#
 
