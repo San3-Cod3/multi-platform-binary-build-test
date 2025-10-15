@@ -268,11 +268,19 @@ jobs:
           #fi
         #shell: bash
         #
-      - name: Update PATH and upgrade pip for macOS
+      #- name: Update PATH and upgrade pip for macOS
+        #run: |
+          #if [ "${{ runner.os }}" = "macOS" ]; then
+            #echo "/Users/runner/Library/Python/3.8/bin" >> $GITHUB_PATH
+            #python3 -m pip install pip==25.0.1 --user || true
+          #fi
+        #shell: bash
+        #
+        - name: Update PATH and upgrade pip for macOS
         run: |
           if [ "${{ runner.os }}" = "macOS" ]; then
             echo "/Users/runner/Library/Python/3.8/bin" >> $GITHUB_PATH
-            python3 -m pip install pip==25.0.1 --user || true
+            python3 -m pip install pip==25.0.1 --user --break-system-packages || true
           fi
         shell: bash
       #''''''
