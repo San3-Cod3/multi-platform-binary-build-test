@@ -249,13 +249,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Upgrade pip early
+      #- name: Upgrade pip early
         # Revised original pip upgrade to use `python` for Windows, `python3` for macOS/Linux before setup-python, ensuring modern pip (25.0.1+) to silence pip version warning (21.1.1 -> 25.0.1) on macOS and avoid exit code 127 ("python3.8: command not found") on Ubuntu/Linux; kept plain pip for macOS/Linux install to match v0.0.0 simplicity.
         #run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || 'python3.8 -m pip install --upgrade pip' }}  # Early upgrade to ensure setup-python uses modern pip (25.0.1+), silencing macOS warning
         # Revised early pip upgrade once again, to this time use `python` for Windows, plain `pip` for macOS, `python3` for Linux before setup-python, ensuring modern pip (25.0.1+) to silence pip version warning (21.1.1 -> 25.0.1) on macOS, avoid PEP 668 error on macOS, and prevent exit code 127 ("python3.8: command not found") on Ubuntu/Linux; kept plain pip for macOS/Linux install to match v0.0.0 simplicity.
         #run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || 'python3 -m pip install --upgrade pip' }}  # Early upgrade using default python3 for macOS/Linux to ensure setup-python uses modern pip (25.0.1+), silencing macOS warning
         ##########run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || (runner.os == 'macOS' && 'pip install --upgrade pip') || 'python3 -m pip install --upgrade pip' }}  # Three-way: python for Windows, plain pip for macOS to avoid PEP 668, python3 for Linux to use runner’s Python and silence macOS warning
-        shell: bash
+        #shell: bash
 
       - uses: actions/setup-python@v5
         with:
