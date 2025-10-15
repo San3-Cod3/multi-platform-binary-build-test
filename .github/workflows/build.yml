@@ -250,7 +250,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Upgrade pip early
-        run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || 'python3.8 -m pip install --upgrade pip' }}  # Early upgrade to ensure setup-python uses modern pip (25.0.1+), silencing macOS warning
+        # Revised original pip upgrade to use `python` for Windows, `python3` for macOS/Linux before setup-python, ensuring modern pip (25.0.1+) to silence pip version warning (21.1.1 -> 25.0.1) on macOS and avoid exit code 127 ("python3.8: command not found") on Ubuntu/Linux; kept plain pip for macOS/Linux install to match v0.0.0 simplicity.
+        #run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || 'python3.8 -m pip install --upgrade pip' }}  # Early upgrade to ensure setup-python uses modern pip (25.0.1+), silencing macOS warning
+        run: ${{ runner.os == 'Windows' && 'python -m pip install --upgrade pip' || 'python3 -m pip install --upgrade pip' }}  # Early upgrade using default python3 for macOS/Linux to ensure setup-python uses modern pip (25.0.1+), silencing macOS warning
         shell: bash
 
       - uses: actions/setup-python@v5
