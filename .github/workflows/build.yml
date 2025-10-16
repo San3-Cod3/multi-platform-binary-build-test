@@ -414,17 +414,17 @@ jobs:
           python -m pip install PyQt5 || true
         shell: bash
 
-      - name: Run Qt application
-        env:
-          QT_QPA_PLATFORM: 'xcb'
-        run: |
-          ./dist/grok_farewell || true
+      #- name: Run Qt application
+        #env:
+          #QT_QPA_PLATFORM: 'xcb'
+        #run: |
+          #./dist/grok_farewell || true
 
-      - name: Run Binary in virtual X11
-        run: |
-          sudo apt-get install -y xvfb || true
-          xvfb-run -a ./dist/grok_farewell || true
-        shell: bash
+      #- name: Run Binary in virtual X11
+        #run: |
+          #sudo apt-get install -y xvfb || true
+          #xvfb-run -a ./dist/grok_farewell || true
+        #shell: bash
       #_____________________________________________________________________#
   
       - run: mkdir -p spec
@@ -433,14 +433,24 @@ jobs:
       - run: pyinstaller --onefile --specpath spec --name grok_farewell grok_farewell.py
         shell: bash
 
+      #- name: Run Binary
+        #run: |
+          #if [ "${{ runner.os }}" == "Windows" ]; then
+            #./dist/grok_farewell.exe
+          #else
+            #./dist/grok_farewell
+          #fi
+        #shell: bash
+
       - name: Run Binary
         run: |
           if [ "${{ runner.os }}" == "Windows" ]; then
             ./dist/grok_farewell.exe
           else
-            ./dist/grok_farewell
+            sudo apt-get install -y xvfb
+            xvfb-run -a ./dist/grok_farewell
           fi
-        shell: bash
+        shell: bash  
 
       - name: Create README
         # Commented out a "v" as 'vv' duplicate appeared in README.txt
