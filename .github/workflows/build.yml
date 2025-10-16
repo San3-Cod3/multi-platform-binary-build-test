@@ -392,6 +392,8 @@ jobs:
         run: |
           sudo apt-get update || true
           sudo apt-get install -y libxcb1 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render1 libxcb-shm0 libxcb-sync1 libxcb-xfixes0 libxcb-shape0 libxcb-randr0 libxcb-glx0 libxcb-xinerama0 libxcb-xkb1 libxcb-util1 libxcb-xinput0 libx11-xcb1 libxext6 libxrandr2 libxfixes3 libxi6 libxrender1 || true
+          sudo apt-get install -y libxkbcommon-x11-0 libglu1-mesa || true
+          sudo apt-get install -y libgl1-mesa-glx libxcb-cursor0 || true
         shell: bash
 
       - name: Install Qt via default package
