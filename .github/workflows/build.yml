@@ -390,13 +390,34 @@ jobs:
       #_____________________________________________________________________#
       - name: Install Qt dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libxcb1 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render1 libxcb-shm0 libxcb-sync1 libxcb-xfixes0 libxcb-shape0 libxcb-randr0 libxcb-glx0 libxcb-xinerama0 libxcb-xkb1 libxcb-util1 libxcb-xinput0 libx11-xcb1 libxext6 libxrandr2 libxfixes3 libxi6 libxrender1
-      
-      - run: ${{ runner.os == 'Windows' && 'python pip install PyQt5' || 'pip install PyQt5' }}
+          sudo apt-get update || true
+          sudo apt-get install -y libxcb1 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render1 libxcb-shm0 libxcb-sync1 libxcb-xfixes0 libxcb-shape0 libxcb-randr0 libxcb-glx0 libxcb-xinerama0 libxcb-xkb1 libxcb-util1 libxcb-xinput0 libx11-xcb1 libxext6 libxrandr2 libxfixes3 libxi6 libxrender1 || true
         shell: bash
-      #_____________________________________________________________________#
 
+      - name: Install Qt via default package
+        run: |
+          sudo apt-get update || true
+          sudo apt-get install -y qt5-default || true
+        shell: bash
+
+      - name: Install PyQt5 on Linux
+        if: runner.os != 'Windows'
+        run: |
+          pip install PyQt5 || true
+        shell: bash
+
+      - name: Install PyQt5 on Windows
+        if: runner.os == 'Windows'
+        run: |
+          python -m pip install PyQt5 || true
+        shell: bash
+
+      - name: Run Qt application
+        env:
+          QT_QPA_PLATFORM: 'xcb'
+        run: ./dist/grok_farewell
+      #_____________________________________________________________________#
+  
       - run: mkdir -p spec
         shell: bash
 
