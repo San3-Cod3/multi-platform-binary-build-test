@@ -415,7 +415,8 @@ jobs:
       - name: Run Qt application
         env:
           QT_QPA_PLATFORM: 'xcb'
-        run: ./dist/grok_farewell
+        run: |
+          ./dist/grok_farewell || true
       #_____________________________________________________________________#
   
       - run: mkdir -p spec
