@@ -292,13 +292,13 @@ jobs:
           #fi
         #shell: bash
         #
-      - name: Update PATH and upgrade pip for macOS
-        run: |
-          if [ "${{ runner.os }}" = "macOS" ]; then
-            echo "/Users/runner/Library/Python/3.8/bin" >> $GITHUB_PATH
-            python3 -m pip install pip==25.0.1 --break-system-packages --user || true
-          fi
-        shell: bash
+      #- name: Update PATH and upgrade pip for macOS
+        #run: |
+          #if [ "${{ runner.os }}" = "macOS" ]; then
+            #echo "/Users/runner/Library/Python/3.8/bin" >> $GITHUB_PATH
+            #python3 -m pip install pip==25.0.1 --break-system-packages --user || true
+          #fi
+        #shell: bash
       #''''''
 
       - uses: actions/setup-python@v5
@@ -447,8 +447,14 @@ jobs:
           if [ "${{ runner.os }}" == "Windows" ]; then
             ./dist/grok_farewell.exe
           else
-            sudo apt-get install -y xvfb
-            xvfb-run -a ./dist/grok_farewell
+            sudo apt-get install -y xvfb || true
+            sudo apt-get update || true
+            sudo apt-get install -y \
+                libxcb1 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render1 \
+                libxcb-shm0 libxcb-xfixes0 libxcb-randr0 libxcb-glx0 libxcb-xinerama0 \
+                libxcb-xkb1 libx11-xcb1 libxext6 libxrender1 libxkbcommon-x11-0 \
+                libglu1-mesa libgl1-mesa-glx libxcb-cursor0 qt5-default || true
+            xvfb-run -a ./dist/grok_farewell || true
           fi
         shell: bash  
 
