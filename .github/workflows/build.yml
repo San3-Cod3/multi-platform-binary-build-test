@@ -419,6 +419,12 @@ jobs:
           QT_QPA_PLATFORM: 'xcb'
         run: |
           ./dist/grok_farewell || true
+
+      - name: Run Binary in virtual X11
+        run: |
+          sudo apt-get install -y xvfb
+          xvfb-run -a ./dist/grok_farewell
+        shell: bash
       #_____________________________________________________________________#
   
       - run: mkdir -p spec
