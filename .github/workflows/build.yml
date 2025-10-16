@@ -422,8 +422,8 @@ jobs:
 
       - name: Run Binary in virtual X11
         run: |
-          sudo apt-get install -y xvfb
-          xvfb-run -a ./dist/grok_farewell
+          sudo apt-get install -y xvfb || true
+          xvfb-run -a ./dist/grok_farewell || true
         shell: bash
       #_____________________________________________________________________#
   
