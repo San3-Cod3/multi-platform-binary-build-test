@@ -365,16 +365,16 @@ jobs:
           #fi  
         #shell: bash
         #
-        run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            python -m pip install --upgrade pip
-          elif [ "${{ runner.os }}" = "macOS" ]; then
-            sudo pip install pip==25.0.1 --user
-            echo "/Users/runner/Library/Python/3.8/bin" >> $GITHUB_PATH
-          else
-            python3 -m pip install --upgrade pip
-          fi  
-        shell: bash
+        #run: |
+          #if [ "${{ runner.os }}" = "Windows" ]; then
+            #python -m pip install --upgrade pip
+          #elif [ "${{ runner.os }}" = "macOS" ]; then
+            #sudo pip install pip==25.0.1 --user
+            #echo "/Users/runner/Library/Python/3.8/bin" >> $GITHUB_PATH
+          #else
+            #python3 -m pip install --upgrade pip
+          #fi  
+        #shell: bash
       #...#
 
       # Commented out previous installation command to avoid unix-like quirks with pip version detection and PATH; uses python3 -m pip to invoke upgraded pip module directly
