@@ -388,7 +388,7 @@ jobs:
         shell: bash
 
       #______________________________________________________#
-      - run: pip install PyQt5 tkinter
+      - run: pip install PyQt5
       #______________________________________________________#
 
       - run: mkdir -p spec
